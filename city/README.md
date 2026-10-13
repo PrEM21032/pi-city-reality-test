@@ -13,7 +13,7 @@ repository. Nothing here designates it as canonical, and `main` is unchanged.
 | `snapshots/<sha256>.html` | The snapshot itself. **Gitignored, never committed here** (see below) |
 | `tools/verify-snapshot.mjs` | Fails unless a file is byte-for-byte the pinned snapshot |
 | `tools/verify-snapshot.test.mjs` | Tests for the verifier: good, one-byte change, missing, unpinned |
-| `tools/truth-ci.sh` | CI entry: run verifier tests, verify the pin, run `truth-tests/` against the pinned file; fails closed if the snapshot is missing, altered, or the suite skips |
+| `tools/truth-ci.sh` | CI entry: verify the pin, then run the shared attack cases against the city (from the pinned file) and against `reference/`; fails closed on a missing or altered snapshot, a skipped city case, any failure, or any reference todo |
 | `ci/truth-tests.yml` | Proposed GitHub Actions workflow. Deliberately outside `.github/workflows/`, so it never runs here |
 
 Run locally, with the snapshot file in place:
