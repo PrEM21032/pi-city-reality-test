@@ -9,7 +9,7 @@ it is not committed. `extract.mjs` pulls the truth-layer code (the `C` labels,
 class) out of a saved copy of the artifact HTML and runs it in Node.
 
 ```
-PI_CITY_HTML=/path/to/saved/pi-city.html node --test truth-tests/
+PI_CITY_HTML=/path/to/saved/pi-city.html node --test truth-tests/*.test.mjs
 ```
 
 Without `PI_CITY_HTML` every test is skipped.

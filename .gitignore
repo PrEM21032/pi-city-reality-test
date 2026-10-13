@@ -1,0 +1,4 @@
+# PI City artifact snapshots are private source. This repository is public
+# and is only the reality test's external target, so snapshots must never be
+# committed here. See city/README.md.
+city/snapshots/*.html

@@ -1,0 +1,21 @@
+# PROPOSED workflow. Deliberately NOT in .github/workflows/, so it does not run
+# in this public test-target repository. Copy it to .github/workflows/ only in
+# the repository the owner designates as canonical for PI City source (see
+# city/README.md); that repository must hold the pinned snapshot file.
+name: truth-tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  truth-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # Pin these to full commit SHAs when promoting.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+      - run: city/tools/truth-ci.sh

@@ -1,0 +1,17 @@
+{
+  "_comment": "Hash-identified, immutable PI City artifact snapshots. The HTML itself is not stored in this public repository; see city/README.md.",
+  "current": "ada22e8b785fb4fc95b23f0b8f986ad30465a81275f806371467ada5ec287843",
+  "snapshots": {
+    "ada22e8b785fb4fc95b23f0b8f986ad30465a81275f806371467ada5ec287843": {
+      "artifact_url": "https://claude.ai/artifact/YaS9dHjDZuCN7rMVsEvQtS",
+      "artifact_id": "ffb65760-9daa-4256-b344-18fff633e13b",
+      "artifact_version": "1791878073-4eb5",
+      "runtime_contract": "0.2.75",
+      "bytes": 284841,
+      "sha256": "ada22e8b785fb4fc95b23f0b8f986ad30465a81275f806371467ada5ec287843",
+      "captured_at": "2026-10-13T16:38:18Z",
+      "captured_by": "Artifact read (read-only) from Claude Code session session_01HWgxU4cvfZ9TRvzx78ngL7",
+      "file": "city/snapshots/ada22e8b785fb4fc95b23f0b8f986ad30465a81275f806371467ada5ec287843.html"
+    }
+  }
+}
