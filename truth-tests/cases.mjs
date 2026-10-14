@@ -96,14 +96,32 @@ export function p2Rows({ execRun = SID_A, verRun = SID_B, execFire = SID_A, verF
 }
 
 // ---- adapters --------------------------------------------------------------
-// City: builds the city's own mission objects from the rows.
-export const cityAdapter = (X) => ({
+// City: builds the city's own mission objects from the rows. `reload` returns
+// a fresh page load (with its own tab holder id) for cases that need a second
+// open view.
+export const cityAdapter = (X, reload) => ({
+  X,
+  another() {
+    if (!reload) throw new Error("cityAdapter needs reload() for multi-view cases");
+    return cityAdapter(reload(), reload);
+  },
   legacy(page, back) {
     const m = Object.create(X.Legacy.prototype);
     Object.assign(m, { page: page && clone(page), back: back && clone(back), loaded1: true, loaded2: true, status: "ready" });
     return m;
   },
   legacyLevel(page, back) { return this.legacy(page, back).receipt().level; },
+  // A legacy mission object wired the way the page wires it: its mission
+  // document is `srv` (shared by every view), dispatches are recorded.
+  view(srv, back, fires) {
+    const m = this.legacy(srv.data(), back);
+    Object.assign(m, {
+      mref: srv.doc(), cfg: { trigger_id: "trig_01B6ibXq8Cq23pAHZx79HjqP" },
+      mcp: { callTool: async (_s, _t, args) => { fires.push(args && args.text); return { payload: {} }; } },
+      app: { ui: { toast() {} } }, render() {}, close() {}, openDlg() {},
+    });
+    return m;
+  },
   p2(rows) {
     const def = X.missionDefs.find((d) => d.id === "repo-status-001");
     const g = new X.Generic(def, { db: {}, cfg: CFG, changed() {} });
@@ -197,17 +215,28 @@ export const CASES = [
   },
   {
     id: "8", title: "resetting the mission must not erase the verified outcome", gapInCity: true,
-    // City: "Reset mission" deletes missions/reality-001.
-    city: (c) => c.legacyLevel(null, BACK_V18_EXEC) === REAL,
+    // City: drives the page's real Reset against a shared mission document.
+    // Kept = no delete, and the archived run still judges REAL-VERIFIED.
+    async city(c) {
+      const srv = server(MISSION_V18);
+      const m = c.view(srv, BACK_V18_EXEC, []);
+      const before = m.receipt().level;
+      await m.restart();
+      const kept = (srv.data() || {}).archived_runs && srv.data().archived_runs[0];
+      const outcomeKept = !srv.ops.some((o) => o === "delete") && !!kept && kept.level === REAL && c.legacyLevel(kept, BACK_V18_EXEC) === REAL;
+      return { before, outcomeKept };
+    },
     // Reference: there is no delete; a reset is appended and the chain stays valid.
     ref: (r, R) => {
       const log = r.legacyLog(MISSION_V18, BACK_V18_EXEC);
+      const opts = { mission: "reality-001", requestedFacts: R.LEGACY_FACTS, scope: R.LEGACY_SCOPE };
+      const before = R.judge(log, opts).level;
       R.resetMission(log, { mission: "reality-001", at: "2026-10-13T10:00:00Z", by: "owner" });
       const rebuilt = R.EvidenceLog.fromEntries(log.entries());
-      return typeof log.delete === "undefined" && typeof log.update === "undefined" &&
-        R.judge(rebuilt, { mission: "reality-001", requestedFacts: R.LEGACY_FACTS, scope: R.LEGACY_SCOPE }).level === REAL;
+      const outcomeKept = typeof log.delete === "undefined" && typeof log.update === "undefined" && R.judge(rebuilt, opts).level === REAL;
+      return { before, outcomeKept };
     },
-    expect: { city: true, ref: true },
+    expect: { city: { before: REAL, outcomeKept: true }, ref: { before: REAL, outcomeKept: true } },
   },
   {
     id: "9", title: "p2: live-shaped run with separate sessions (baseline)",
@@ -257,79 +286,137 @@ export const CASES = [
     expect: { city: true, ref: true },
   },
   {
-    id: "17", title: "p2: a second view that loses the lease fires nothing",
-    async city(c) {
-      const rows = p2Rows(); rows.page.requests = {}; rows.back = {};
-      const g = c.p2(rows); let fires = 0;
-      g.rt.mcp = { callTool: async () => { fires++; return { payload: {} }; } };
-      g.mref = fakeDoc(g.page, { lease: false });
-      await g.dispatch("execute");
-      return fires;
-    },
-    async ref(r, R) {
-      const rows = p2Rows(); rows.page.requests = {}; rows.back = {};
-      const log = R.importProtocol2(DEF_RS, rows.page, rows.back), leases = new R.LeaseStore();
-      leases.acquire("repo-status-001:execute", "tab_other", 5000);
-      let fires = 0;
-      await new R.Dispatcher({ log, leases, nonce }).dispatch({ mission: "repo-status-001", action: "execute", holder: "tab_me", fire: async () => { fires++; } });
-      return fires;
-    },
-    expect: { city: 0, ref: 0 },
+    id: "17", title: "p2: a second view that loses the lease fires nothing (and does not crash)",
+    async city(c) { return p2Dispatch(c, { leaseHeld: true }); },
+    async ref(r, R) { return refDispatchP2(R, { leaseHeld: true }); },
+    expect: { city: { fires: 0, crashed: false }, ref: { fires: 0, crashed: false } },
   },
   {
-    id: "18", title: "p2: a repeat click while a request is pending fires nothing",
-    async city(c) {
-      const rows = p2Rows(); rows.back = {};
-      rows.page.requests = { execute: { nonce: "exec0002", at: new Date().toISOString(), dispatch: { status: "fired" } } };
-      const g = c.p2(rows); let fires = 0;
-      g.rt.mcp = { callTool: async () => { fires++; return { payload: {} }; } };
-      g.mref = fakeDoc(g.page);
-      await g.dispatch("execute");
-      return fires;
-    },
-    async ref(r, R) {
-      const rows = p2Rows(); rows.back = {};
-      rows.page.requests = { execute: { nonce: "exec0002", at: new Date().toISOString(), dispatch: { status: "fired" } } };
-      const log = R.importProtocol2(DEF_RS, rows.page, rows.back);
-      let fires = 0;
-      await new R.Dispatcher({ log, leases: new R.LeaseStore(), nonce }).dispatch({ mission: "repo-status-001", action: "execute", holder: "tab_me", fire: async () => { fires++; } });
-      return fires;
-    },
-    expect: { city: 0, ref: 0 },
+    id: "17c", title: "control: a lone view with a free lease fires exactly once",
+    async city(c) { return p2Dispatch(c, {}); },
+    async ref(r, R) { return refDispatchP2(R, {}); },
+    expect: { city: { fires: 1, crashed: false }, ref: { fires: 1, crashed: false } },
+  },
+  {
+    id: "18", title: "p2: a repeat click while a request is pending fires nothing (and does not crash)",
+    async city(c) { return p2Dispatch(c, { pendingAgeMs: 0 }); },
+    async ref(r, R) { return refDispatchP2(R, { pendingAgeMs: 0 }); },
+    expect: { city: { fires: 0, crashed: false }, ref: { fires: 0, crashed: false } },
+  },
+  {
+    id: "18c", title: "control: a request older than the 8-minute pending window does not block",
+    async city(c) { return p2Dispatch(c, { pendingAgeMs: 9 * 60_000 }); },
+    async ref(r, R) { return refDispatchP2(R, { pendingAgeMs: 9 * 60_000 }); },
+    expect: { city: { fires: 1, crashed: false }, ref: { fires: 1, crashed: false } },
   },
   {
     id: "19", title: "legacy: two views completing the mission at once fire one verify, not two", gapInCity: true,
     async city(c) {
-      let fires = 0;
-      const tab = () => {
-        const m = c.legacy({ ...MISSION_0153, requests: { create: MISSION_0153.requests.create } }, BACK_0153);
-        m.mref = { update: async () => {} };
-        m.fire = async () => { fires++; return true; };
-        m.render = () => {};
-        return m;
-      };
-      await Promise.all([tab().complete(), tab().complete()]);
-      return fires;
+      const srv = server(READY), fires = [];
+      const v1 = c.view(srv, BACK_0153, fires), v2 = c.another().view(srv, BACK_0153, fires);
+      await Promise.all([v1.complete(), v2.complete()]);
+      return { fires: fires.length, crashed: crashed(v1.note) || crashed(v2.note) };
     },
     async ref(r, R) {
-      const log = r.legacyLog({ ...MISSION_0153, requests: { create: MISSION_0153.requests.create } }, BACK_0153);
-      const leases = new R.LeaseStore();
+      const log = r.legacyLog(READY, BACK_0153), leases = new R.LeaseStore();
       let fires = 0;
       const tab = (holder) => new R.Dispatcher({ log, leases, nonce }).dispatch({ mission: "reality-001", action: "verify", holder, fire: async () => { fires++; } });
       await Promise.all([tab("tab_one"), tab("tab_two")]);
-      return fires;
+      return { fires, crashed: false };
     },
-    expect: { city: 1, ref: 1 },
+    expect: { city: { fires: 1, crashed: false }, ref: { fires: 1, crashed: false } },
+  },
+  {
+    id: "19c", title: "control: one view completing the mission fires exactly one verify",
+    async city(c) {
+      const srv = server(READY), fires = [];
+      const v = c.view(srv, BACK_0153, fires);
+      await v.complete();
+      return { fires: fires.length, crashed: crashed(v.note) };
+    },
+    async ref(r, R) {
+      let fires = 0;
+      await new R.Dispatcher({ log: r.legacyLog(READY, BACK_0153), leases: new R.LeaseStore(), nonce }).dispatch({ mission: "reality-001", action: "verify", holder: "tab_one", fire: async () => { fires++; } });
+      return { fires, crashed: false };
+    },
+    expect: { city: { fires: 1, crashed: false }, ref: { fires: 1, crashed: false } },
+  },
+  {
+    id: "19e", title: "control: retry after the previous verify was answered with a recorded error fires",
+    async city(c) {
+      const at = new Date().toISOString();
+      const srv = server({ ...READY, requests: { ...READY.requests, verify: { nonce: "verify00001", at } } }), fires = [];
+      const back = { ...clone(BACK_0153), status: "blocked", error: { action: "verify", nonce: "verify00001", reason: "repo_not_attached", at } };
+      const v = c.view(srv, back, fires);
+      await v.retry("verify");
+      return { fires: fires.length, crashed: crashed(v.note) };
+    },
+    async ref(r, R) {
+      const at = new Date().toISOString();
+      const log = r.legacyLog(READY, BACK_0153);
+      log.append({ type: "request", mission: "reality-001", action: "verify", nonce: "verify00001", at });
+      log.append({ type: "error", mission: "reality-001", nonce: "verify00001", reason: "repo_not_attached", at });
+      let fires = 0;
+      await new R.Dispatcher({ log, leases: new R.LeaseStore(), nonce }).dispatch({ mission: "reality-001", action: "verify", holder: "tab_one", fire: async () => { fires++; } });
+      return { fires, crashed: false };
+    },
+    expect: { city: { fires: 1, crashed: false }, ref: { fires: 1, crashed: false } },
   },
 ];
 
-// A minimal stand-in for the city's database document (lease + merge update).
-function fakeDoc(initial, { lease = true } = {}) {
-  let data = clone(initial), holder = null;
+// The legacy mission ready for COMPLETE: accepted, evidence inspected, no verify request yet.
+const READY = { ...MISSION_0153, requests: { create: MISSION_0153.requests.create } };
+
+// A thrown JavaScript error caught by the city and shown as a note. A case
+// that expects "nothing fired" must not pass this way.
+const crashed = (note) => /is not defined|is not a function|Cannot read propert|reading '/.test(String(note || ""));
+
+// One mission document as the database holds it, shared by every view:
+// a single lease holder per TTL, merge update, set, delete. Records writes.
+export function server(initial) {
+  let data = initial == null ? null : clone(initial), lease = null;
+  const ops = [];
   const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
   return {
-    async acquire({ holder: h }) { if (!lease || (holder && holder !== h)) return { acquired: false }; holder = h; return { acquired: true }; },
-    async get() { return { exists: true, data: () => clone(data) }; },
-    async update(patch) { merge(data, patch); },
+    ops,
+    data: () => data && clone(data),
+    holdLease(holder, ms = 5000) { lease = { holder, until: Date.now() + ms }; },
+    doc: () => ({
+      async acquire({ holder, ttlMs }) {
+        const now = Date.now();
+        if (lease && lease.holder !== holder && lease.until > now) return { acquired: false };
+        lease = { holder, until: now + ttlMs };
+        return { acquired: true };
+      },
+      async get() { return { exists: data != null, data: () => clone(data) }; },
+      async update(p) { ops.push("update"); data = merge(data || {}, clone(p)); },
+      async set(p) { ops.push("set"); data = clone(p); },
+      async delete() { ops.push("delete"); data = null; },
+    }),
   };
+}
+
+// Protocol-2 dispatch through the city's real code against a shared document.
+async function p2Dispatch(c, { leaseHeld = false, pendingAgeMs } = {}) {
+  const rows = p2Rows(); rows.back = {};
+  rows.page.requests = pendingAgeMs === undefined ? {} :
+    { execute: { nonce: "exec0002", at: new Date(Date.now() - pendingAgeMs).toISOString(), dispatch: { status: "fired" } } };
+  const g = c.p2(rows), srv = server(g.page);
+  if (leaseHeld) srv.holdLease("tab_other");
+  let fires = 0;
+  g.rt.mcp = { callTool: async () => { fires++; return { payload: {} }; } };
+  g.mref = srv.doc();
+  await g.dispatch("execute");
+  return { fires, crashed: crashed(g.note) };
+}
+
+async function refDispatchP2(R, { leaseHeld = false, pendingAgeMs } = {}) {
+  const rows = p2Rows(); rows.back = {};
+  rows.page.requests = pendingAgeMs === undefined ? {} :
+    { execute: { nonce: "exec0002", at: new Date(Date.now() - pendingAgeMs).toISOString(), dispatch: { status: "fired" } } };
+  const log = R.importProtocol2(DEF_RS, rows.page, rows.back), leases = new R.LeaseStore();
+  if (leaseHeld) leases.acquire("repo-status-001:execute", "tab_other", 5000);
+  let fires = 0;
+  await new R.Dispatcher({ log, leases, nonce }).dispatch({ mission: "repo-status-001", action: "execute", holder: "tab_me", fire: async () => { fires++; } });
+  return { fires, crashed: false };
 }

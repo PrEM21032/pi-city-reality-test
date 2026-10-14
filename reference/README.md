@@ -35,7 +35,7 @@ city/tools/truth-ci.sh                            # both suites, with the pinned
 ## What this proves, and what it does not
 
 **Reference proof:** these rules, applied to the same row fixtures as the city,
-hold all 20 shared cases, including the 7 the city fails. Breaking any single
+hold all 24 shared cases, including the 7 the city fails. Breaking any single
 rule turns at least one test red; the mutation check is in the commit message
 that added this directory.
 

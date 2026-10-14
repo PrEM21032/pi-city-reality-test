@@ -10,7 +10,7 @@ import { CASES, cityAdapter } from "./cases.mjs";
 
 const X = load();
 const skip = X ? false : "set PI_CITY_HTML to a saved copy of the PI City artifact";
-const c = X && cityAdapter(X);
+const c = X && cityAdapter(X, () => load());
 
 for (const k of CASES) {
   const opts = { skip, todo: k.gapInCity ? "known gap in the city (see truth-tests/README.md)" : undefined };
