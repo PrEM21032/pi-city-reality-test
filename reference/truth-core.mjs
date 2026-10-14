@@ -80,8 +80,10 @@ export class EvidenceLog {
 
 // ---- identity ------------------------------------------------------------
 
-// A platform-issued session id, exactly. No trimming, no annotations.
-const IDENTITY = /^(cse|session)_[A-Za-z0-9]{10,64}$/;
+// A platform-issued run identity, exactly. No trimming, no annotations.
+// Either a Claude session id, or a GitHub Actions run as
+// gha:<owner>/<repo>/<run_id>/<attempt> (verifier/repo-status-verifier.mjs).
+const IDENTITY = /^(?:(?:cse|session)_[A-Za-z0-9]{10,64}|gha:[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}\/[0-9]{1,20}\/[0-9]{1,6})$/;
 export const canonicalIdentity = (s) => (typeof s === "string" && IDENTITY.test(s) ? s : null);
 
 // Identity of a run = its self-reported session and the dispatcher-reported

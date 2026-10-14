@@ -1,0 +1,35 @@
+# PROPOSED workflow. Deliberately NOT in .github/workflows/, so it never runs
+# until the owner moves it there (workflow_dispatch also needs the file on the
+# default branch, i.e. a reviewed merge). It needs no secrets and requests no
+# token permissions: the mission repository is public.
+name: repo-status-verify
+on:
+  workflow_dispatch:
+    inputs:
+      nonce:
+        description: "Verify-request nonce from missions/repo-status-001.requests.verify.nonce"
+        required: true
+permissions: {}
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Pin these to full commit SHAs when promoting.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+      - name: Independent read of the mission repository
+        env:
+          NONCE: ${{ inputs.nonce }}
+        run: |
+          set -o pipefail
+          node verifier/repo-status-verifier.mjs --repo PrEM21032/pi-city-reality-test --nonce "$NONCE" | tee record.json
+          { echo '```json'; cat record.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repo-status-verification-${{ inputs.nonce }}
+          path: record.json

@@ -7,6 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 node --test --test-reporter=tap city/tools/verify-snapshot.test.mjs >/dev/null
+node --test --test-reporter=tap verifier/repo-status-verifier.test.mjs >/dev/null
 
 SNAP="$(node city/tools/verify-snapshot.mjs "${PI_CITY_SNAPSHOT_SHA:-}")"
 echo "verified snapshot: $SNAP"
