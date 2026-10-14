@@ -16,6 +16,7 @@
 //   5. Permission counts only when the owner granted it for the exact scope.
 //   6. Dispatch takes a lease and refuses while a request is still pending.
 import { createHash } from "node:crypto";
+import { checkRunAttestation, DEFAULT_TRUST } from "./attestation.mjs";
 
 export const LEVEL = Object.freeze({
   NOT_STARTED: "NOT STARTED",
@@ -29,7 +30,7 @@ export const LEVEL = Object.freeze({
 
 // ---- evidence log --------------------------------------------------------
 
-const canonical = (v) =>
+export const canonical = (v) =>
   v === null || typeof v !== "object"
     ? JSON.stringify(v)
     : Array.isArray(v)
@@ -83,6 +84,8 @@ export class EvidenceLog {
 // A platform-issued run identity, exactly. No trimming, no annotations.
 // Either a Claude session id, or a GitHub Actions run as
 // gha:<owner>/<repo>/<run_id>/<attempt> (verifier/repo-status-verifier.mjs).
+// Being well-formed makes an identity *recorded*, not *trusted*: a gha:
+// identity counts only with an attestation (see judge and attestation.mjs).
 const IDENTITY = /^(?:(?:cse|session)_[A-Za-z0-9]{10,64}|gha:[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}\/[0-9]{1,20}\/[0-9]{1,6})$/;
 export const canonicalIdentity = (s) => (typeof s === "string" && IDENTITY.test(s) ? s : null);
 
@@ -103,9 +106,15 @@ const factsMatch = (requested, expected, observed) =>
 
 // policy.independence:
 //   "distinct-run"  (default) recorded, canonical, different run identities
-//   "distinct-path" additionally a different verification path, e.g. a
-//                   GitHub Action vs a Claude routine
-export function judge(log, { mission, requestedFacts, scope, policy = {} }) {
+//   "distinct-path" the verifier must ALSO be an attested GitHub Actions run;
+//                   a writable `path` field is never evidence of a path
+//
+// attestations / trust: GitHub Actions run attestations and the owner's trust
+// pins, handed to the judge by the caller over a separate trust path. They
+// are never read from the evidence log. A verification whose identity is a
+// gha: run counts only if an attestation for that run passes
+// checkRunAttestation; with the default (empty) trust nothing passes.
+export function judge(log, { mission, requestedFacts, scope, policy = {}, attestations = [], trust = DEFAULT_TRUST }) {
   const ev = log.events().filter((e) => e.mission === mission);
   const why = (level, reason) => ({ level, reason });
 
@@ -137,12 +146,20 @@ export function judge(log, { mission, requestedFacts, scope, policy = {} }) {
 
   const execId = runIdentity(exec);
   if (!execId) return why(LEVEL.REPORTED, "executor identity not recorded");
-  const independent = obs.find((v) =>
-    ok(v) && verifyNonces.has(v.nonce) && v.nonce !== exec.nonce && t(v.at) >= t(exec.at) &&
-    runIdentity(v) && runIdentity(v) !== execId &&
-    (policy.independence !== "distinct-path" || (v.path && exec.path && v.path !== exec.path)));
+  const requests = ev.filter((e) => e.type === "request" && e.action === "verify");
+  const attested = (v, vid) => attestations.some((att) => checkRunAttestation(att, {
+    identity: vid, verification: v, request: requests.find((r) => r.nonce === v.nonce), execution: exec,
+    executorId: execId, requestedFacts, trust,
+  }).ok);
+  const independent = obs.find((v) => {
+    const vid = runIdentity(v);
+    if (!(ok(v) && verifyNonces.has(v.nonce) && v.nonce !== exec.nonce && t(v.at) >= t(exec.at) && vid && vid !== execId)) return false;
+    const external = vid.startsWith("gha:");
+    if (external) return attested(v, vid);                 // a gha: claim alone is never enough
+    return policy.independence !== "distinct-path";        // distinct-path needs an attested external run
+  });
   if (!independent) return why(LEVEL.REPORTED, "no independent read-back answering our request");
-  return why(LEVEL.REAL, `read back by ${runIdentity(independent)}, executed by ${execId}`);
+  return why(LEVEL.REAL, `read back by ${runIdentity(independent)}${runIdentity(independent).startsWith("gha:") ? " (attested)" : ""}, executed by ${execId}`);
 }
 
 // Reset is an appended event. Evidence of earlier runs is never removed.

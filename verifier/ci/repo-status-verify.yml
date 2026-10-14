@@ -3,6 +3,9 @@
 # default branch, i.e. a reviewed merge). It needs no secrets and requests no
 # token permissions: the mission repository is public.
 name: repo-status-verify
+# The attestation contract binds the run to the mission request through this
+# title (reference/attestation.mjs: display_title must be exactly this).
+run-name: repo-status-verify ${{ inputs.nonce }}
 on:
   workflow_dispatch:
     inputs:

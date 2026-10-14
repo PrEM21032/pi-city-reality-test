@@ -10,6 +10,8 @@ anything changes in the private artifact.
 | `truth-core.mjs` | Append-only, hash-chained evidence log; the judge; lease-guarded dispatcher |
 | `import-rows.mjs` | Turns PI City's database row shapes into evidence-log events, so the reference judges exactly what the city judges |
 | `reference.test.mjs` | The shared attack cases (`../truth-tests/cases.mjs`) plus reference-only checks R1–R7 |
+| `attestation.mjs` | The GitHub Actions run attestation contract (fail-closed) |
+| `attestation.test.mjs` | Adversarial tests: the claim alone, every contract term broken on its own, and the positive control |
 
 ## Rules
 
@@ -17,8 +19,11 @@ anything changes in the private artifact.
    reset is an appended event.
 2. A read-back is independent only if the executor and the verifier both have
    a recorded, canonical run identity and the two differ. Unknown, malformed or
-   conflicting identities never count. Optional `distinct-path` policy also
-   requires a different verification path (for example a GitHub Action).
+   conflicting identities never count. A GitHub Actions identity (`gha:`) is
+   only a claim: it counts only with a run attestation handed to the judge over
+   a separate trust path (`attestation.mjs`; default trust is empty, so none
+   pass). The optional `distinct-path` policy requires such an attested run; a
+   writable `path` field is never evidence.
 3. A read-back must answer a verify request the mission issued, be no older
    than the execution, and match every requested fact.
 4. The newest observation wins: a newer failed read-back demotes the outcome.

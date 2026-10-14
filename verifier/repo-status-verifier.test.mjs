@@ -91,13 +91,19 @@ const judgeWith = async (env, opts = {}) => {
   rows.back.verifications.veri0001 = { exit_code: rec.exit_code, checked_at: rec.checked_at, run_session: rec.run_session, path: rec.path, data: rec.data };
   return core.judge(imp.importProtocol2(DEF_RS, rows.page, rows.back), { mission: DEF_RS.id, requestedFacts: DEF_RS.verifier.match, scope: DEF_RS.permission.scope, policy: opts.policy });
 };
-test("an Actions-run record is REAL-VERIFIED even under the distinct-path policy", async () => {
-  assert.equal((await judgeWith(GHA, { policy: { independence: "distinct-path" } })).level, core.LEVEL.REAL);
+test("the verifier's own record, even from a real Actions env, is only a claim: EXECUTOR-REPORTED", async () => {
+  assert.equal((await judgeWith(GHA)).level, core.LEVEL.REPORTED);
+  assert.equal((await judgeWith(GHA, { policy: { independence: "distinct-path" } })).level, core.LEVEL.REPORTED);
+});
+test("simulating Actions env vars locally yields the same claim, so it must not count either", async () => {
+  const forged = runIdentity({ ...GHA, GITHUB_RUN_ID: "1" });
+  assert.equal(forged.identity, "gha:PrEM21032/pi-city-reality-test/1/1");
+  assert.equal((await judgeWith({ ...GHA, GITHUB_RUN_ID: "1" })).level, core.LEVEL.REPORTED);
 });
 test("a local run of the same verifier is not REAL-VERIFIED (no identity)", async () => {
   assert.equal((await judgeWith({})).level, core.LEVEL.REPORTED);
 });
-test("a forged near-miss Actions identity is not accepted", () => {
+test("a near-miss Actions identity is not even well-formed", () => {
   assert.equal(core.canonicalIdentity("gha:PrEM21032/pi-city-reality-test/123456789/1 "), null);
   assert.equal(core.canonicalIdentity("gha:PrEM21032/pi-city-reality-test/abc/1"), null);
   assert.equal(core.canonicalIdentity("gha:PrEM21032/pi-city-reality-test/123456789/1"), "gha:PrEM21032/pi-city-reality-test/123456789/1");

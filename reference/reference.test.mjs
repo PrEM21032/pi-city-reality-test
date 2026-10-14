@@ -55,12 +55,12 @@ test("[R3] every requested fact is compared (the issue-body drift seen live)", (
   assert.match(res.reason, /facts differ/);
 });
 
-test("[R4] distinct-path policy rejects a verifier on the same path as the executor", () => {
+test("[R4] distinct-path policy: a verifier on the same path, or a writable path claim, is not independent", () => {
   const rows = p2Rows();
   const opts = { mission: DEF_RS.id, requestedFacts: DEF_RS.verifier.match, scope: DEF_RS.permission.scope, policy: { independence: "distinct-path" } };
   assert.equal(judge(R.importProtocol2(DEF_RS, rows.page, rows.back), opts).level, LEVEL.REPORTED);
-  rows.back.verifications.veri0001.path = "github-action";
-  assert.equal(judge(R.importProtocol2(DEF_RS, rows.page, rows.back), opts).level, LEVEL.REAL);
+  rows.back.verifications.veri0001.path = "github-action";   // anyone can type this; see attestation.test.mjs
+  assert.equal(judge(R.importProtocol2(DEF_RS, rows.page, rows.back), opts).level, LEVEL.REPORTED);
 });
 
 test("[R5] conflicting self-reported and dispatcher-reported identities are unknown", () => {

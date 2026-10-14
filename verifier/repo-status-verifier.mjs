@@ -2,14 +2,16 @@
 //
 // It reads a public GitHub repository's default branch and head commit with
 // `git ls-remote --symref` (no credentials, no AI), and produces a
-// verification record in the same shape the protocol-2 backend writes. When
-// it runs inside GitHub Actions the record carries an identity and evidence
-// URL derived from the platform's own run metadata, so anyone can re-open the
-// run and check it; that is a verification path separate from the Claude
-// routine that executes the mission.
+// verification record in the same shape the protocol-2 backend writes. Inside
+// GitHub Actions the record names the run (identity and evidence URL) from
+// the run's environment variables.
 //
-// It never writes to PI City's database. Delivering a record there is a
-// separate, owner-approved step (see verifier/README.md).
+// The record is a CLAIM, not proof: anyone can write the same fields into a
+// database row, and the environment variables can be set by hand. It counts
+// as independent only through reference/attestation.mjs, when a separately
+// trusted fetcher reads the run and its uploaded record from GitHub's API.
+//
+// It never writes to PI City's database (see verifier/README.md).
 import { execFile } from "node:child_process";
 
 export const MATCH_FIELDS = ["default_branch", "head_sha"];
@@ -44,9 +46,9 @@ export function parseLsRemote(text) {
   return { default_branch: defaultBranch, head_sha: headSha, branch_count: branches };
 }
 
-// Who ran this verification. Inside GitHub Actions the identity comes from the
-// platform's run metadata; anywhere else it is null, so a local run can never
-// count as an independent verifier.
+// Who claims to have run this verification. Inside GitHub Actions the claim
+// comes from the run's environment variables; anywhere else it is null. Either
+// way it is a label, not evidence (see reference/attestation.mjs).
 export function runIdentity(env = process.env) {
   if (env.GITHUB_ACTIONS !== "true") return { identity: null, path: "local", evidence_url: null };
   const { GITHUB_REPOSITORY: repo, GITHUB_RUN_ID: run, GITHUB_RUN_ATTEMPT: attempt, GITHUB_SERVER_URL: server } = env;
