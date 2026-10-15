@@ -29,10 +29,39 @@ An Actions-run verification counts as REAL-VERIFIED only when the judge is also 
 
 The default trust is empty (no pinned workflow commit, no designated fetcher), so **nothing passes until the owner configures it**. Every term is covered by a test that breaks only that term, and removing any single check makes the suite fail (22/22 mutations caught).
 
+## The attestation fetcher (read-only adapter, not connected)
+
+`verifier/fetch-attestation.mjs` turns three official GitHub REST API responses into an attestation for `reference/attestation.mjs`:
+
+1. `GET /repos/{o}/{r}/actions/runs/{run_id}/attempts/{attempt}`: the run attempt.
+2. `GET /repos/{o}/{r}/actions/runs/{run_id}/artifacts?name=repo-status-verification-<nonce>`: the artifact list.
+3. `GET /repos/{o}/{r}/actions/artifacts/{artifact_id}/zip`: the artifact archive.
+
+**What the official API says.** This comes from GitHub's OpenAPI description (`github/rest-api-description`, v1.1.4). The docs site was not reachable from the build environment.
+
+- Endpoints 1 and 2 are documented as readable by "anyone with read access to the repository".
+- Endpoint 3 has no such sentence. It says OAuth and classic personal access tokens "need the `repo` scope", and it answers with a redirect that expires after one minute. The adapter therefore treats download as **requiring a token**.
+
+**Fails closed.** `buildAttestation` is pure and throws `AttestationError` on anything missing or ambiguous:
+
+- **Run attempt:** a missing or mistyped run field. A run whose id, attempt or repository differs from the claimed identity. A run that has not concluded (`conclusion: null`). A workflow path that is not exactly `.github/workflows/<file>` or `<this repo>/.github/workflows/<file>@<ref>`.
+- **Artifact:** none for the nonce, or more than one. A paginated list. An expired artifact, or one whose expiry is unknown. An artifact from another run or commit. A missing digest (`upload-artifact` older than v4 reports none).
+- **Archive:** archive bytes that differ from GitHub's `sha256:` digest. An archive that is not exactly one `record.json` JSON object. A ZIP that is zip64, encrypted, multi-disk or fails its CRC check.
+
+The adapter checks that the data is consistent. Trust (the pinned workflow commit, the designated fetcher), the nonce and the exact facts are still judged by `reference/attestation.mjs`.
+
+**The network boundary.**
+
+- `fetchRunAttestation` makes exactly those three calls, in order, through an injected `http` client.
+- It refuses before downloading when the artifact is missing or duplicated.
+- The default client (`unconfiguredHttp`) refuses every call.
+
+**Proof limit.** The tests use fixtures shaped from the OpenAPI schemas. No real run or artifact has been fetched. The workflow is not active, and this repository has no workflow runs.
+
 ## Run
 
 ```
-node --test verifier/repo-status-verifier.test.mjs reference/attestation.test.mjs
+node --test verifier/repo-status-verifier.test.mjs verifier/fetch-attestation.test.mjs reference/attestation.test.mjs
 node verifier/repo-status-verifier.mjs --repo PrEM21032/pi-city-reality-test --nonce <nonce> [--expect executor.json]
 ```
 
@@ -42,5 +71,5 @@ Exit codes: 0 = the read succeeded (and matches `--expect`); 2 = facts differ; 1
 
 1. **Activate the workflow.** Move `ci/repo-status-verify.yml` into `.github/workflows/` on the default branch (a reviewed merge). It uses no secrets and `permissions: {}`.
 2. **Pin trust.** Record the reviewed workflow commit SHA(s) and the designated fetcher identity.
-3. **Build the fetcher.** It reads `GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt}` and the run's uploaded `record.json`, computes the digest, and hands the attestation to the judge over a channel the database cannot write. Downloading run artifacts may require a GitHub token, which would be a new credential and needs approval. Nothing here fetches from GitHub's API.
+3. **Connect the fetcher.** The adapter exists (`verifier/fetch-attestation.mjs`, below) but ships no HTTP client and holds no credential. Downloading the artifact needs an authenticated token, which would be a new credential and needs approval. Nothing here fetches from GitHub's API.
 4. **Wire the live city.** The live city does not implement this rule; adopting it means changing and republishing the artifact.
