@@ -13,7 +13,7 @@ import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import zlib from "node:zlib";
-import { buildAttestation, fetchRunAttestation, normalizeWorkflowPath, readZipEntries, unconfiguredHttp, artifactNameFor, AttestationError } from "./fetch-attestation.mjs";
+import { buildAttestation, fetchRunAttestation, normalizeWorkflowPath, readZipEntries, selectArtifact, unconfiguredHttp, artifactNameFor, AttestationError, LIMITS } from "./fetch-attestation.mjs";
 import { checkRunAttestation } from "../reference/attestation.mjs";
 import * as core from "../reference/truth-core.mjs";
 import * as imp from "../reference/import-rows.mjs";
@@ -89,6 +89,9 @@ test("missing repository, malformed sha, bad timestamps and wrong types are refu
   const r = RUN(); delete r.repository; refuses({ runAttempt: r }, /run\.repository\.full_name missing/);
   refuses({ runAttempt: { ...RUN(), head_sha: "abc" } }, /40-character/);
   refuses({ runAttempt: { ...RUN(), created_at: "yesterday" } }, /not a timestamp/);
+  for (const loose of ["2026", "1", "2026-10-13", "2026-10-13 08:02:30Z", "Tue, 13 Oct 2026 08:02:30 GMT", "2026-10-13T08:02:30"]) {
+    refuses({ runAttempt: { ...RUN(), updated_at: loose } }, /run\.updated_at is not a timestamp/);   // Date.parse accepts these; RFC 3339 does not
+  }
   refuses({ runAttempt: { ...RUN(), id: "123456789" } }, /run\.id is not integer/);
   refuses({ runAttempt: null }, /run\.id missing/);
 });
@@ -124,6 +127,66 @@ test("artifact digest must be present (upload-artifact v4+) and well-formed", ()
   refuses({ artifactList: { total_count: 1, artifacts: [{ ...a, digest: sha(ZIP) }] } }, /digest missing or malformed/);
 });
 
+// ---- the artifact list must be complete before anything is downloaded ---------------
+test("artifact list: total_count is required, a safe integer, and equal to the entries returned", () => {
+  const a = ARTS().artifacts[0];
+  for (const total_count of [undefined, null, "1", 1.5, Number.MAX_SAFE_INTEGER + 2, NaN]) {
+    refuses({ artifactList: { total_count, artifacts: [a] } }, /total_count missing or not an integer/);
+  }
+  // a duplicate on a page we did not read: GitHub counts two, we were sent one
+  refuses({ artifactList: { total_count: 2, artifacts: [a] } }, /paginated or incomplete/);
+  refuses({ artifactList: { total_count: 0, artifacts: [a] } }, /paginated or incomplete/);
+  refuses({ artifactList: { total_count: -1, artifacts: [a] } }, /paginated or incomplete/);
+  assert.equal(selectArtifact(ARTS(), "veri0001").id, 555);
+});
+test("artifact size_in_bytes is required and bounded before download", () => {
+  const a = ARTS().artifacts[0];
+  for (const size_in_bytes of [undefined, "12", 1.5]) refuses({ artifactList: { total_count: 1, artifacts: [{ ...a, size_in_bytes }] } }, /artifact\.size_in_bytes (missing|is not integer)/);
+  refuses({ artifactList: { total_count: 1, artifacts: [{ ...a, size_in_bytes: LIMITS.zipBytes + 1 }] } }, /outside 0\.\./);
+  refuses({ artifactList: { total_count: 1, artifacts: [{ ...a, size_in_bytes: -1 }] } }, /outside 0\.\./);
+});
+
+// ---- size bounds: nothing unbounded is hashed, inflated or parsed ----------------------
+const zrej = (b, re, opts) => assert.throws(() => readZipEntries(b, opts), (e) => e instanceof AttestationError && re.test(e.message));
+test("the size bounds are fixed, small, and frozen", () => {
+  assert.deepEqual({ ...LIMITS }, { zipBytes: 256 * 1024, entries: 1, entryBytes: 64 * 1024 });
+  assert.ok(Object.isFrozen(LIMITS));
+  zrej(Buffer.concat([Buffer.alloc(1024 * 1024), ZIP]), /^archive exceeds 262144 bytes/);   // 1 MiB refused by default
+});
+test("an archive over the byte bound is refused before hashing or reading", () => {
+  const big = Buffer.concat([Buffer.alloc(LIMITS.zipBytes), ZIP]);
+  const list = { total_count: 1, artifacts: [{ ...ARTS().artifacts[0], size_in_bytes: 100, digest: `sha256:${sha(big)}` }] };
+  refuses({ artifactList: list, artifactZip: big }, /^artifact archive exceeds/);
+  zrej(big, /^archive exceeds \d+ bytes/);
+  zrej(ZIP, /^archive exceeds 10 bytes/, { maxBytes: 10 });
+});
+test("entry count and entry sizes are bounded before inflating", () => {
+  zrej(zip([["record.json", "{}"], ["b", "x"]]), /2 entries; at most 1 allowed/);
+  const cd = (b) => b.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+  const usize = ZIP.readUInt32LE(cd(ZIP) + 24), csize = ZIP.readUInt32LE(cd(ZIP) + 20);
+  assert.ok(usize > csize);
+  zrej(ZIP, /entry exceeds/, { maxEntryBytes: usize - 1 });                     // uncompressed size alone over the bound
+  const c = Buffer.from(ZIP); c.writeUInt32LE(LIMITS.entryBytes + 1, cd(c) + 20); zrej(c, /entry exceeds/);  // compressed size alone
+  const honestBomb = zip([["record.json", Buffer.alloc(8 * 1024 * 1024, 0x20)]]);   // 8 MiB of spaces, ~8 KiB deflated
+  assert.ok(honestBomb.length < LIMITS.entryBytes);
+  zrej(honestBomb, /entry exceeds/);
+  refuses(withZip(zip([["record.json", JSON.stringify({ pad: "x".repeat(LIMITS.entryBytes) })]])), /entry exceeds/);   // record.json bound
+});
+test("deflate data that inflates beyond its declared size stops at the bound", () => {
+  const bomb = zip([["record.json", Buffer.alloc(8 * 1024 * 1024, 0x20)]]), at = bomb.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+  bomb.writeUInt32LE(100, at + 24);                                                // lie: declare 100 bytes
+  zrej(bomb, /inflates beyond its declared size/);
+  const short = Buffer.from(ZIP), s2 = short.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+  short.writeUInt32LE(short.readUInt32LE(s2 + 24) - 1, s2 + 24);
+  zrej(short, /inflates beyond its declared size/);
+});
+test("ambiguous archives are refused: trailing bytes after the end record, local/central header disagreement", () => {
+  zrej(Buffer.concat([ZIP, Buffer.from("trailing")]), /end-of-central-directory record is ambiguous/);
+  const fakeTail = Buffer.from(ZIP); fakeTail.writeUInt16LE(5, fakeTail.length - 2); zrej(fakeTail, /ambiguous/);
+  const name = Buffer.from(ZIP); name[30] ^= 0x20; zrej(name, /local and central headers disagree/);       // local name "Record.json"
+  const meth = Buffer.from(ZIP); meth.writeUInt16LE(0, 8); zrej(meth, /local and central headers disagree/);
+});
+
 // ---- archive integrity and contents ----------------------------------------------------
 test("archive bytes must match the digest GitHub reports", () => {
   const tampered = Buffer.from(ZIP); tampered[tampered.length - 30] ^= 1;
@@ -133,13 +196,13 @@ test("archive bytes must match the digest GitHub reports", () => {
 const withZip = (z) => ({ artifactZip: z, artifactList: ARTS(z) });
 test("archive must hold exactly one entry, record.json, containing a JSON object", () => {
   refuses(withZip(zip([])), /exactly one entry/);
-  refuses(withZip(zip([["record.json", "{}"], ["extra.txt", "x"]])), /exactly one entry/);
+  refuses(withZip(zip([["record.json", "{}"], ["extra.txt", "x"]])), /2 entries; at most 1 allowed/);
   refuses(withZip(zip([["other.json", JSON.stringify(RECORD)]])), /exactly one entry, record\.json/);
   refuses(withZip(zip([["record.json", "not json"]])), /not valid JSON/);
   refuses(withZip(zip([["record.json", "[1,2]"]])), /not an object/);
 });
 test("corrupt or unsupported archives are refused", () => {
-  refuses(withZip(Buffer.from("PK not really a zip, just text that is long enough")), /end-of-central-directory/);
+  refuses(withZip(Buffer.from("PK not really a zip, just text that is long enough")), /has no end-of-central-directory record/);
   const crcBad = Buffer.from(ZIP); crcBad.writeUInt32LE(0, crcBad.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02])) + 16);
   refuses(withZip(crcBad), /CRC mismatch/);
   const enc = Buffer.from(ZIP); enc.writeUInt16LE(1, enc.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02])) + 8);
@@ -156,7 +219,7 @@ test("each structural ZIP check fails on its own, with an explicit error", () =>
   bad((b) => b.writeUInt32LE(1, eocd + 16), /corrupt central directory/);
   bad((b) => b.writeUInt32LE(0xffffffff, cd + 20), /zip64 entries/);
   bad((b) => b.writeUInt32LE(0, 0), /corrupt local header/);
-  bad((b) => b.writeUInt32LE(1_000_000, cd + 20), /truncated entry/);
+  bad((b) => b.writeUInt32LE(ZIP.length, cd + 20), /truncated entry/);
   bad((b) => b.writeUInt32LE(ZIP.readUInt32LE(cd + 24) + 1, cd + 24), /size mismatch/);
   assert.equal(readZipEntries(ZIP).length, 1);   // the unmodified fixture still reads
 });
@@ -195,13 +258,13 @@ test("orchestration makes exactly the three documented read-only calls, in order
   const calls = [];
   const http = {
     async getJSON(p) { calls.push(["GET", p]); return p.includes("/attempts/") ? RUN() : ARTS(); },
-    async downloadArtifactZip(p) { calls.push(["ZIP", p]); return ZIP; },
+    async downloadArtifactZip(p, opts) { calls.push(["ZIP", p, opts]); return ZIP; },
   };
   const att = await fetchRunAttestation({ identity: GHA_ID, nonce: "veri0001", http, fetchedBy: FETCHER, now: () => new Date("2026-10-13T08:05:00.250Z") });
   assert.deepEqual(calls, [
     ["GET", `/repos/${REPO}/actions/runs/123456789/attempts/1`],
     ["GET", `/repos/${REPO}/actions/runs/123456789/artifacts?name=${artifactNameFor("veri0001")}&per_page=100`],
-    ["ZIP", `/repos/${REPO}/actions/artifacts/555/zip`],
+    ["ZIP", `/repos/${REPO}/actions/artifacts/555/zip`, { maxBytes: LIMITS.zipBytes }],
   ]);
   assert.equal(att.fetched_at, "2026-10-13T08:05:00Z");
   assert.deepEqual(checkRunAttestation(att, CTX), { ok: true, failures: [] });
@@ -217,4 +280,27 @@ test("orchestration refuses before downloading when the artifact is missing or d
   const a = ARTS().artifacts[0];
   await assert.rejects(fetchRunAttestation({ identity: GHA_ID, nonce: "veri0001", http: mk({ total_count: 2, artifacts: [a, { ...a, id: 556 }] }), fetchedBy: FETCHER }), /more than one/);
   assert.equal(downloads, 0);
+});
+test("orchestration refuses before downloading on an incomplete list, missing total_count or oversize artifact", async () => {
+  let downloads = 0;
+  const mk = (arts) => ({ async getJSON(p) { return p.includes("/attempts/") ? RUN() : arts; }, async downloadArtifactZip() { downloads++; return ZIP; } });
+  const a = ARTS().artifacts[0];
+  const go = (arts) => fetchRunAttestation({ identity: GHA_ID, nonce: "veri0001", http: mk(arts), fetchedBy: FETCHER });
+  await assert.rejects(go({ artifacts: [a] }), /total_count missing/);
+  await assert.rejects(go({ total_count: 101, artifacts: [a] }), /paginated or incomplete/);
+  await assert.rejects(go({ total_count: 1, artifacts: [{ ...a, size_in_bytes: LIMITS.zipBytes + 1 }] }), /outside 0\.\./);
+  assert.equal(downloads, 0);
+});
+test("orchestration validates nonce and fetcher before making any call", async () => {
+  let calls = 0;
+  const http = { async getJSON() { calls++; return {}; }, async downloadArtifactZip() { calls++; return ZIP; } };
+  await assert.rejects(fetchRunAttestation({ identity: GHA_ID, nonce: "bad nonce!", http, fetchedBy: FETCHER }), /invalid nonce/);
+  await assert.rejects(fetchRunAttestation({ identity: GHA_ID, nonce: "veri0001", http, fetchedBy: "" }), /fetchedBy missing/);
+  assert.equal(calls, 0);
+});
+test("a client that ignores the byte bound is still refused", async () => {
+  const big = Buffer.concat([Buffer.alloc(LIMITS.zipBytes), ZIP]);
+  const http = { async getJSON(p) { return p.includes("/attempts/") ? RUN() : { total_count: 1, artifacts: [{ ...ARTS().artifacts[0], size_in_bytes: 1, digest: `sha256:${sha(big)}` }] }; },
+    async downloadArtifactZip() { return big; } };
+  await assert.rejects(fetchRunAttestation({ identity: GHA_ID, nonce: "veri0001", http, fetchedBy: FETCHER }), (e) => e instanceof AttestationError && /^artifact archive exceeds/.test(e.message));
 });

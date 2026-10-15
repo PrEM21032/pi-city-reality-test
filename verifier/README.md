@@ -45,15 +45,19 @@ The default trust is empty (no pinned workflow commit, no designated fetcher), s
 **Fails closed.** `buildAttestation` is pure and throws `AttestationError` on anything missing or ambiguous:
 
 - **Run attempt:** a missing or mistyped run field. A run whose id, attempt or repository differs from the claimed identity. A run that has not concluded (`conclusion: null`). A workflow path that is not exactly `.github/workflows/<file>` or `<this repo>/.github/workflows/<file>@<ref>`.
-- **Artifact:** none for the nonce, or more than one. A paginated list. An expired artifact, or one whose expiry is unknown. An artifact from another run or commit. A missing digest (`upload-artifact` older than v4 reports none).
-- **Archive:** archive bytes that differ from GitHub's `sha256:` digest. An archive that is not exactly one `record.json` JSON object. A ZIP that is zip64, encrypted, multi-disk or fails its CRC check.
+- **Artifact list:** `total_count` missing or not a safe integer, or not equal to the number of entries returned. Either way the list may be paginated or truncated, and a duplicate could sit on a page that was not read.
+- **Artifact:** none for the nonce, or more than one. `size_in_bytes` missing or over the archive bound. An expired artifact, or one whose expiry is unknown. An artifact from another run or commit. A missing digest (`upload-artifact` older than v4 reports none).
+- **Archive:** archive bytes that differ from GitHub's `sha256:` digest. An archive that is not exactly one `record.json` JSON object. A ZIP that is zip64, encrypted, multi-disk or fails its CRC check. A ZIP that is ambiguous: bytes after the end record, or local and central headers that disagree.
+- **Size:** nothing unbounded is hashed, inflated or parsed. The archive is at most 256 KiB, with at most one entry. That entry (and so `record.json`) is at most 64 KiB both compressed and uncompressed, and inflation stops at its declared size.
+- **Timestamps:** run times must be RFC 3339, the API's documented `date-time` format. Loose forms that `Date.parse` would accept are refused.
 
 The adapter checks that the data is consistent. Trust (the pinned workflow commit, the designated fetcher), the nonce and the exact facts are still judged by `reference/attestation.mjs`.
 
 **The network boundary.**
 
 - `fetchRunAttestation` makes exactly those three calls, in order, through an injected `http` client.
-- It refuses before downloading when the artifact is missing or duplicated.
+- It checks the nonce and fetcher before the first call. It checks the whole artifact list (completeness, uniqueness, size) before the download.
+- It passes the byte bound to the client (`downloadArtifactZip(path, { maxBytes })`), and still refuses an archive over it if the client ignores the bound.
 - The default client (`unconfiguredHttp`) refuses every call.
 
 **Proof limit.** The tests use fixtures shaped from the OpenAPI schemas. No real run or artifact has been fetched. The workflow is not active, and this repository has no workflow runs.

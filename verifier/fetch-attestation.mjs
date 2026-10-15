@@ -22,7 +22,18 @@ const GHA = /^gha:([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})\/([0-9]{1,20})\/
 const SHA40 = /^[0-9a-f]{40}$/;
 const DIGEST = /^sha256:([0-9a-f]{64})$/;
 const WORKFLOW_FILE = /^\.github\/workflows\/[A-Za-z0-9._-]+\.ya?ml$/;
+// RFC 3339 date-time, the OpenAPI `format` of every run timestamp.
+const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
+const NONCE = /^[A-Za-z0-9_-]{6,40}$/;
 export const artifactNameFor = (nonce) => `repo-status-verification-${nonce}`;
+
+// Size bounds, checked before hashing, inflating or parsing. The expected
+// artifact is one small record.json (well under 1 KiB), so these are generous.
+export const LIMITS = Object.freeze({
+  zipBytes: 256 * 1024,     // whole artifact archive, and the artifact's reported size
+  entries: 1,               // central-directory entries
+  entryBytes: 64 * 1024,    // each entry, compressed and uncompressed (bounds record.json)
+});
 
 export function parseIdentity(identity) {
   const m = GHA.exec(identity || "");
@@ -51,18 +62,23 @@ const need = (obj, key, type, where) => {
   if (type === "integer" ? !Number.isSafeInteger(v) : typeof v !== type) fail(`${where}.${key} is not ${type}`);
   return v;
 };
-const needTime = (obj, key, where) => { const v = need(obj, key, "string", where); if (isNaN(Date.parse(v))) fail(`${where}.${key} is not a timestamp`); return v; };
+const needTime = (obj, key, where) => { const v = need(obj, key, "string", where); if (!DATE_TIME.test(v) || isNaN(Date.parse(v))) fail(`${where}.${key} is not a timestamp`); return v; };
 
 // Minimal ZIP reader (central directory based). Refuses zip64, encryption,
 // multi-disk archives and unknown compression; checks sizes and CRC-32.
-export function readZipEntries(buf) {
+// Every size is bounded before anything is inflated, and inflation itself
+// stops at the declared size.
+export function readZipEntries(buf, { maxBytes = LIMITS.zipBytes, maxEntries = LIMITS.entries, maxEntryBytes = LIMITS.entryBytes } = {}) {
   if (!Buffer.isBuffer(buf) || buf.length < 22) fail("artifact archive missing or truncated");
+  if (buf.length > maxBytes) fail(`archive exceeds ${maxBytes} bytes`);
   let eocd = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 65535); i--) if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
   if (eocd < 0) fail("artifact archive has no end-of-central-directory record");
+  if (eocd + 22 + buf.readUInt16LE(eocd + 20) !== buf.length) fail("end-of-central-directory record is ambiguous (comment length does not reach the end)");
   if (buf.readUInt16LE(eocd + 4) !== 0 || buf.readUInt16LE(eocd + 6) !== 0) fail("multi-disk archives are not supported");
   const count = buf.readUInt16LE(eocd + 10), cdOffset = buf.readUInt32LE(eocd + 16);
   if (count === 0xffff || cdOffset === 0xffffffff) fail("zip64 archives are not supported");
+  if (count > maxEntries) fail(`archive has ${count} entries; at most ${maxEntries} allowed`);
   const entries = [];
   let p = cdOffset;
   for (let n = 0; n < count; n++) {
@@ -73,13 +89,18 @@ export function readZipEntries(buf) {
     const name = buf.subarray(p + 46, p + 46 + nlen).toString("utf8");
     if (flags & 1) fail(`encrypted entry: ${name}`);
     if (csize === 0xffffffff || usize === 0xffffffff || lho === 0xffffffff) fail("zip64 entries are not supported");
+    if (csize > maxEntryBytes || usize > maxEntryBytes) fail(`entry exceeds ${maxEntryBytes} bytes: ${name}`);
     if (lho + 30 > buf.length || buf.readUInt32LE(lho) !== 0x04034b50) fail(`corrupt local header: ${name}`);
-    const start = lho + 30 + buf.readUInt16LE(lho + 26) + buf.readUInt16LE(lho + 28);
+    const lnlen = buf.readUInt16LE(lho + 26), start = lho + 30 + lnlen + buf.readUInt16LE(lho + 28);
+    if (buf.readUInt16LE(lho + 8) !== method || !buf.subarray(lho + 30, lho + 30 + lnlen).equals(buf.subarray(p + 46, p + 46 + nlen))) fail(`local and central headers disagree: ${name}`);
     if (start + csize > buf.length) fail(`truncated entry: ${name}`);
     const raw = buf.subarray(start, start + csize);
     let data;
     if (method === 0) data = Buffer.from(raw);
-    else if (method === 8) { try { data = zlib.inflateRawSync(raw); } catch { fail(`corrupt deflate data: ${name}`); } }
+    else if (method === 8) {
+      try { data = zlib.inflateRawSync(raw, { maxOutputLength: Math.max(usize, 1) }); }
+      catch (e) { fail(e && e.code === "ERR_BUFFER_TOO_LARGE" ? `entry inflates beyond its declared size: ${name}` : `corrupt deflate data: ${name}`); }
+    }
     else fail(`unsupported compression method ${method}: ${name}`);
     if (data.length !== usize) fail(`size mismatch: ${name}`);
     if (zlib.crc32(data) !== crc) fail(`CRC mismatch: ${name}`);
@@ -89,11 +110,33 @@ export function readZipEntries(buf) {
   return entries;
 }
 
+function checkRequest({ nonce, fetchedBy }) {
+  if (!NONCE.test(nonce || "")) fail("invalid nonce");
+  if (typeof fetchedBy !== "string" || !fetchedBy) fail("fetchedBy missing");
+}
+
+// The one artifact for this nonce, from a list that must be complete: the
+// API's total_count is required, and must equal the entries returned, so a
+// duplicate cannot hide on a page we did not read. Used before any download.
+export function selectArtifact(artifactList, nonce) {
+  const list = artifactList && artifactList.artifacts;
+  if (!Array.isArray(list)) fail("artifact list missing");
+  if (!Number.isSafeInteger(artifactList.total_count)) fail("artifact list total_count missing or not an integer");
+  if (artifactList.total_count !== list.length) fail("artifact list is paginated or incomplete");
+  const named = list.filter((a) => a && a.name === artifactNameFor(nonce));
+  if (named.length === 0) fail(`no artifact named ${artifactNameFor(nonce)}`);
+  if (named.length > 1) fail(`more than one artifact named ${artifactNameFor(nonce)}`);
+  const art = named[0];
+  need(art, "id", "integer", "artifact");
+  const size = need(art, "size_in_bytes", "integer", "artifact");
+  if (size < 0 || size > LIMITS.zipBytes) fail(`artifact size ${size} is outside 0..${LIMITS.zipBytes} bytes`);
+  return art;
+}
+
 // Pure: official API responses -> attestation, or AttestationError.
 export function buildAttestation({ identity, nonce, runAttempt, artifactList, artifactZip, fetchedBy, fetchedAt }) {
   const id = parseIdentity(identity);
-  if (!/^[A-Za-z0-9_-]{6,40}$/.test(nonce || "")) fail("invalid nonce");
-  if (typeof fetchedBy !== "string" || !fetchedBy) fail("fetchedBy missing");
+  checkRequest({ nonce, fetchedBy });
   if (typeof fetchedAt !== "string" || isNaN(Date.parse(fetchedAt))) fail("fetchedAt missing");
 
   // 1. run attempt
@@ -115,14 +158,7 @@ export function buildAttestation({ identity, nonce, runAttempt, artifactList, ar
   if (repository !== id.repository) fail("run repository differs from the claimed identity");
 
   // 2. exactly one artifact for this nonce, bound to this run and commit
-  const list = artifactList && artifactList.artifacts;
-  if (!Array.isArray(list)) fail("artifact list missing");
-  if (Number.isSafeInteger(artifactList.total_count) && artifactList.total_count !== list.length) fail("artifact list is paginated or incomplete");
-  const named = list.filter((a) => a && a.name === artifactNameFor(nonce));
-  if (named.length === 0) fail(`no artifact named ${artifactNameFor(nonce)}`);
-  if (named.length > 1) fail(`more than one artifact named ${artifactNameFor(nonce)}`);
-  const art = named[0];
-  need(art, "id", "integer", "artifact");
+  const art = selectArtifact(artifactList, nonce);
   if (art.expired !== false) fail("artifact expired or expiry unknown");
   const wr = art.workflow_run;
   if (!wr || wr.id !== runId) fail("artifact is not from this run");
@@ -132,6 +168,7 @@ export function buildAttestation({ identity, nonce, runAttempt, artifactList, ar
 
   // 3. the archive bytes must match the digest GitHub reports; exactly one record.json inside
   if (!Buffer.isBuffer(artifactZip)) fail("artifact archive missing");
+  if (artifactZip.length > LIMITS.zipBytes) fail(`artifact archive exceeds ${LIMITS.zipBytes} bytes`);
   if (createHash("sha256").update(artifactZip).digest("hex") !== dm[1]) fail("artifact archive does not match its reported digest");
   const entries = readZipEntries(artifactZip);
   if (entries.length !== 1 || entries[0].name !== "record.json") fail("artifact must contain exactly one entry, record.json");
@@ -154,13 +191,15 @@ export const unconfiguredHttp = Object.freeze({
 });
 
 // Orchestration over an injected client: exactly these three read-only calls.
+// Inputs are checked before the first call, and the artifact list fully
+// (selectArtifact) before the download; the client is told the byte bound.
 export async function fetchRunAttestation({ identity, nonce, http = unconfiguredHttp, fetchedBy, now = () => new Date() }) {
   const id = parseIdentity(identity);
+  checkRequest({ nonce, fetchedBy });
   const base = `/repos/${id.owner}/${id.repo}/actions`;
   const runAttempt = await http.getJSON(`${base}/runs/${id.runId}/attempts/${id.attempt}`);
   const artifactList = await http.getJSON(`${base}/runs/${id.runId}/artifacts?name=${encodeURIComponent(artifactNameFor(nonce))}&per_page=100`);
-  const named = (artifactList && Array.isArray(artifactList.artifacts) ? artifactList.artifacts : []).filter((a) => a && a.name === artifactNameFor(nonce));
-  if (named.length !== 1 || !Number.isSafeInteger(named[0].id)) fail(named.length ? "more than one artifact named for this nonce" : `no artifact named ${artifactNameFor(nonce)}`);
-  const artifactZip = await http.downloadArtifactZip(`${base}/artifacts/${named[0].id}/zip`);
+  const art = selectArtifact(artifactList, nonce);
+  const artifactZip = await http.downloadArtifactZip(`${base}/artifacts/${art.id}/zip`, { maxBytes: LIMITS.zipBytes });
   return buildAttestation({ identity, nonce, runAttempt, artifactList, artifactZip, fetchedBy, fetchedAt: now().toISOString().replace(/\.\d{3}Z$/, "Z") });
 }
