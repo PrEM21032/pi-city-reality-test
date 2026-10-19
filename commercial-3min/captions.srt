@@ -1,0 +1,167 @@
+1
+00:00:02,000 --> 00:00:03,241
+Night at the pumps.
+
+2
+00:00:03,541 --> 00:00:08,251
+Inside, the counter, the kitchen, the coolers and the aisles keep moving.
+
+3
+00:00:08,551 --> 00:00:13,273
+This is one store, and every hour it asks its owner for another decision.
+
+4
+00:00:26,000 --> 00:00:28,573
+Most of those decisions arrive separately.
+
+5
+00:00:28,873 --> 00:00:30,716
+Fuel numbers in one place.
+
+6
+00:00:31,016 --> 00:00:32,512
+Shelf counts in another.
+
+7
+00:00:32,812 --> 00:00:37,018
+The register, the kitchen, the shift notes, each with its own story.
+
+8
+00:00:37,318 --> 00:00:40,559
+So the owner ends up chasing problems one at a time,
+
+9
+00:00:40,559 --> 00:00:43,363
+often after they have already cost something.
+
+10
+00:00:51,000 --> 00:00:52,292
+Start with the cooler.
+
+11
+00:00:52,592 --> 00:00:57,086
+The old way, a shortage gets noticed when the shelf is already empty,
+
+12
+00:00:57,086 --> 00:01:00,278
+and a customer leaves without what they came for.
+
+13
+00:01:03,500 --> 00:01:07,990
+PI StationOS is designed to change that order of events.
+
+14
+00:01:08,290 --> 00:01:15,554
+In this simulation, it brings sales pace and stock on hand together, sees a drink selling faster than usual,
+
+15
+00:01:15,554 --> 00:01:19,993
+and flags that it is likely to run short before the next delivery.
+
+16
+00:01:20,293 --> 00:01:22,957
+It explains why, and drafts a reorder.
+
+17
+00:01:23,257 --> 00:01:24,971
+Nothing is sent on its own.
+
+18
+00:01:25,271 --> 00:01:28,952
+The owner reviews it, changes the quantity, and approves.
+
+19
+00:01:31,500 --> 00:01:33,148
+Now step back outside.
+
+20
+00:01:33,448 --> 00:01:37,249
+Fuel and inside sales are usually reviewed apart.
+
+21
+00:01:37,549 --> 00:01:41,545
+Put them in one operating picture, and the decision changes.
+
+22
+00:01:41,845 --> 00:01:47,264
+In this example, evening pump traffic is up, but inside sales have not followed.
+
+23
+00:01:47,565 --> 00:01:51,302
+Looking at food sales alone, you might cut back on prep.
+
+24
+00:01:51,602 --> 00:01:53,119
+With the pumps in view,
+
+25
+00:01:53,119 --> 00:01:57,935
+the better move is to staff the counter, and invite those drivers inside.
+
+26
+00:02:06,000 --> 00:02:08,950
+Then comes the shift change, where details slip.
+
+27
+00:02:09,250 --> 00:02:12,382
+PI proposes a clear handoff: what was finished,
+
+28
+00:02:12,382 --> 00:02:16,048
+what is still open, and the one exception that matters.
+
+29
+00:02:16,348 --> 00:02:18,340
+Here, the drawer count does not match.
+
+30
+00:02:18,640 --> 00:02:20,916
+The next person gets a specific action,
+
+31
+00:02:20,916 --> 00:02:23,133
+and the owner can see when it is done.
+
+32
+00:02:24,500 --> 00:02:26,802
+And every recommendation comes to you.
+
+33
+00:02:27,102 --> 00:02:29,315
+Approve it, edit it, or decline it.
+
+34
+00:02:29,615 --> 00:02:30,916
+You stay informed.
+
+35
+00:02:31,216 --> 00:02:32,633
+You stay in control.
+
+36
+00:02:36,500 --> 00:02:41,749
+PI StationOS is a proposed way to help owners run the whole station,
+
+37
+00:02:41,749 --> 00:02:47,152
+fuel, shelves, counter and shifts, with more clarity and more control.
+
+38
+00:02:47,452 --> 00:02:49,618
+It is not connected to this store today.
+
+39
+00:02:49,918 --> 00:02:52,537
+We want to build it with owners who know the work.
+
+40
+00:02:53,157 --> 00:02:54,271
+See the concept.
+
+41
+00:02:54,891 --> 00:02:56,041
+Shape the pilot.
+
+42
+00:02:56,661 --> 00:02:57,863
+Ask for a demo.

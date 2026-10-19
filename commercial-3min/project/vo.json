@@ -1,0 +1,257 @@
+[
+ {
+  "id": "v1",
+  "start": 2.0,
+  "dur": 11.273,
+  "speed": 0.95,
+  "text": "Night at the pumps. Inside, the counter, the kitchen, the coolers and the aisles keep moving. This is one store, and every hour it asks its owner for another decision.",
+  "tts": "Night at the pumps. Inside, the counter, the kitchen, the coolers and the aisles keep moving. This is one store, and every hour it asks its owner for another decision.",
+  "sentences": [
+   {
+    "text": "Night at the pumps.",
+    "start": 2.0,
+    "end": 3.241
+   },
+   {
+    "text": "Inside, the counter, the kitchen, the coolers and the aisles keep moving.",
+    "start": 3.541,
+    "end": 8.251
+   },
+   {
+    "text": "This is one store, and every hour it asks its owner for another decision.",
+    "start": 8.551,
+    "end": 13.273
+   }
+  ]
+ },
+ {
+  "id": "v2",
+  "start": 26.0,
+  "dur": 17.363,
+  "speed": 0.95,
+  "text": "Most of those decisions arrive separately. Fuel numbers in one place. Shelf counts in another. The register, the kitchen, the shift notes, each with its own story. So the owner ends up chasing problems one at a time, often after they have already cost something.",
+  "tts": "Most of those decisions arrive separately. Fuel numbers in one place. Shelf counts in another. The register, the kitchen, the shift notes, each with its own story. So the owner ends up chasing problems one at a time, often after they've already cost something.",
+  "sentences": [
+   {
+    "text": "Most of those decisions arrive separately.",
+    "start": 26.0,
+    "end": 28.573
+   },
+   {
+    "text": "Fuel numbers in one place.",
+    "start": 28.873,
+    "end": 30.716
+   },
+   {
+    "text": "Shelf counts in another.",
+    "start": 31.016,
+    "end": 32.512
+   },
+   {
+    "text": "The register, the kitchen, the shift notes, each with its own story.",
+    "start": 32.812,
+    "end": 37.018
+   },
+   {
+    "text": "So the owner ends up chasing problems one at a time, often after they have already cost something.",
+    "start": 37.318,
+    "end": 43.363
+   }
+  ]
+ },
+ {
+  "id": "v3",
+  "start": 51.0,
+  "dur": 9.278,
+  "speed": 0.95,
+  "text": "Start with the cooler. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
+  "tts": "Start with the cooler. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
+  "sentences": [
+   {
+    "text": "Start with the cooler.",
+    "start": 51.0,
+    "end": 52.292
+   },
+   {
+    "text": "The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
+    "start": 52.592,
+    "end": 60.278
+   }
+  ]
+ },
+ {
+  "id": "v4",
+  "start": 63.5,
+  "dur": 25.452,
+  "speed": 0.95,
+  "text": "PI StationOS is designed to change that order of events. In this simulation, it brings sales pace and stock on hand together, sees a drink selling faster than usual, and flags that it is likely to run short before the next delivery. It explains why, and drafts a reorder. Nothing is sent on its own. The owner reviews it, changes the quantity, and approves.",
+  "tts": "Pie Station O S is designed to change that order of events. In this simulation, it brings sales pace and stock on hand together, sees a drink selling faster than usual, and flags that it's likely to run short before the next delivery. It explains why, and drafts a reorder. Nothing is sent on its own. The owner reviews it, changes the quantity, and approves.",
+  "sentences": [
+   {
+    "text": "PI StationOS is designed to change that order of events.",
+    "start": 63.5,
+    "end": 67.99
+   },
+   {
+    "text": "In this simulation, it brings sales pace and stock on hand together, sees a drink selling faster than usual, and flags that it is likely to run short before the next delivery.",
+    "start": 68.29,
+    "end": 79.993
+   },
+   {
+    "text": "It explains why, and drafts a reorder.",
+    "start": 80.293,
+    "end": 82.957
+   },
+   {
+    "text": "Nothing is sent on its own.",
+    "start": 83.257,
+    "end": 84.971
+   },
+   {
+    "text": "The owner reviews it, changes the quantity, and approves.",
+    "start": 85.271,
+    "end": 88.952
+   }
+  ]
+ },
+ {
+  "id": "v5",
+  "start": 91.5,
+  "dur": 26.435,
+  "speed": 0.95,
+  "text": "Now step back outside. Fuel and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales have not followed. Looking at food sales alone, you might cut back on prep. With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
+  "tts": "Now step back outside. Fuel and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales haven't followed. Looking at food sales alone, you might cut back on prep. With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
+  "sentences": [
+   {
+    "text": "Now step back outside.",
+    "start": 91.5,
+    "end": 93.148
+   },
+   {
+    "text": "Fuel and inside sales are usually reviewed apart.",
+    "start": 93.448,
+    "end": 97.249
+   },
+   {
+    "text": "Put them in one operating picture, and the decision changes.",
+    "start": 97.549,
+    "end": 101.545
+   },
+   {
+    "text": "In this example, evening pump traffic is up, but inside sales have not followed.",
+    "start": 101.845,
+    "end": 107.264
+   },
+   {
+    "text": "Looking at food sales alone, you might cut back on prep.",
+    "start": 107.565,
+    "end": 111.302
+   },
+   {
+    "text": "With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
+    "start": 111.602,
+    "end": 117.935
+   }
+  ]
+ },
+ {
+  "id": "v6",
+  "start": 126.0,
+  "dur": 17.133,
+  "speed": 0.98,
+  "text": "Then comes the shift change, where details slip. PI proposes a clear handoff: what was finished, what is still open, and the one exception that matters. Here, the drawer count does not match. The next person gets a specific action, and the owner can see when it is done.",
+  "tts": "Then comes the shift change, where details slip. Pie proposes a clear handoff: what was finished, what's still open, and the one exception that matters. Here, the drawer count doesn't match. The next person gets a specific action, and the owner can see when it's done.",
+  "sentences": [
+   {
+    "text": "Then comes the shift change, where details slip.",
+    "start": 126.0,
+    "end": 128.95
+   },
+   {
+    "text": "PI proposes a clear handoff: what was finished, what is still open, and the one exception that matters.",
+    "start": 129.25,
+    "end": 136.048
+   },
+   {
+    "text": "Here, the drawer count does not match.",
+    "start": 136.348,
+    "end": 138.34
+   },
+   {
+    "text": "The next person gets a specific action, and the owner can see when it is done.",
+    "start": 138.64,
+    "end": 143.133
+   }
+  ]
+ },
+ {
+  "id": "v7",
+  "start": 144.5,
+  "dur": 8.133,
+  "speed": 0.95,
+  "text": "And every recommendation comes to you. Approve it, edit it, or decline it. You stay informed. You stay in control.",
+  "tts": "And every recommendation comes to you. Approve it, edit it, or decline it. You stay informed. You stay in control.",
+  "sentences": [
+   {
+    "text": "And every recommendation comes to you.",
+    "start": 144.5,
+    "end": 146.802
+   },
+   {
+    "text": "Approve it, edit it, or decline it.",
+    "start": 147.102,
+    "end": 149.315
+   },
+   {
+    "text": "You stay informed.",
+    "start": 149.615,
+    "end": 150.916
+   },
+   {
+    "text": "You stay in control.",
+    "start": 151.216,
+    "end": 152.633
+   }
+  ]
+ },
+ {
+  "id": "v8",
+  "start": 156.5,
+  "dur": 21.363,
+  "speed": 0.95,
+  "text": "PI StationOS is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. It is not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
+  "tts": "Pie Station O S is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. It's not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
+  "sentences": [
+   {
+    "text": "PI StationOS is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control.",
+    "start": 156.5,
+    "end": 167.152
+   },
+   {
+    "text": "It is not connected to this store today.",
+    "start": 167.452,
+    "end": 169.618
+   },
+   {
+    "text": "We want to build it with owners who know the work.",
+    "start": 169.918,
+    "end": 172.537
+   },
+   {
+    "text": "See the concept.",
+    "start": 173.157,
+    "end": 174.271
+   },
+   {
+    "text": "Shape the pilot.",
+    "start": 174.891,
+    "end": 176.041
+   },
+   {
+    "text": "Ask for a demo.",
+    "start": 176.661,
+    "end": 177.863
+   }
+  ]
+ }
+]
