@@ -2,25 +2,25 @@
  {
   "id": "v1",
   "start": 2.0,
-  "dur": 11.273,
+  "dur": 12.02,
   "speed": 0.95,
-  "text": "Night at the pumps. Inside, the counter, the kitchen, the coolers and the aisles keep moving. This is one store, and every hour it asks its owner for another decision.",
-  "tts": "Night at the pumps. Inside, the counter, the kitchen, the coolers and the aisles keep moving. This is one store, and every hour it asks its owner for another decision.",
+  "text": "This is Irvington Food Mart. The counter, the kitchen, the coffee bar, the coolers and the aisles. Shelves full of products, one owner, and every hour the store asks for another decision.",
+  "tts": "This is Irvington Food Mart. The counter, the kitchen, the coffee bar, the coolers and the aisles. Shelves full of products, one owner, and every hour the store asks for another decision.",
   "sentences": [
    {
-    "text": "Night at the pumps.",
+    "text": "This is Irvington Food Mart.",
     "start": 2.0,
-    "end": 3.241
+    "end": 3.916
    },
    {
-    "text": "Inside, the counter, the kitchen, the coolers and the aisles keep moving.",
-    "start": 3.541,
-    "end": 8.251
+    "text": "The counter, the kitchen, the coffee bar, the coolers and the aisles.",
+    "start": 4.216,
+    "end": 8.117
    },
    {
-    "text": "This is one store, and every hour it asks its owner for another decision.",
-    "start": 8.551,
-    "end": 13.273
+    "text": "Shelves full of products, one owner, and every hour the store asks for another decision.",
+    "start": 8.417,
+    "end": 14.02
    }
   ]
  },
@@ -62,20 +62,20 @@
  {
   "id": "v3",
   "start": 51.0,
-  "dur": 9.278,
+  "dur": 9.502,
   "speed": 0.95,
-  "text": "Start with the cooler. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
-  "tts": "Start with the cooler. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
+  "text": "Start with the cooler wall. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
+  "tts": "Start with the cooler wall. The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
   "sentences": [
    {
-    "text": "Start with the cooler.",
+    "text": "Start with the cooler wall.",
     "start": 51.0,
-    "end": 52.292
+    "end": 52.516
    },
    {
     "text": "The old way, a shortage gets noticed when the shelf is already empty, and a customer leaves without what they came for.",
-    "start": 52.592,
-    "end": 60.278
+    "start": 52.816,
+    "end": 60.502
    }
   ]
  },
@@ -117,40 +117,40 @@
  {
   "id": "v5",
   "start": 91.5,
-  "dur": 26.435,
+  "dur": 26.722,
   "speed": 0.95,
-  "text": "Now step back outside. Fuel and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales have not followed. Looking at food sales alone, you might cut back on prep. With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
-  "tts": "Now step back outside. Fuel and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales haven't followed. Looking at food sales alone, you might cut back on prep. With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
+  "text": "Now bring fuel into view. Pump sales and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales have not followed. Looking at food sales alone, you might cut back on prep. With fuel in view, the better move is to staff the counter, and invite those drivers inside.",
+  "tts": "Now bring fuel into view. Pump sales and inside sales are usually reviewed apart. Put them in one operating picture, and the decision changes. In this example, evening pump traffic is up, but inside sales haven't followed. Looking at food sales alone, you might cut back on prep. With fuel in view, the better move is to staff the counter, and invite those drivers inside.",
   "sentences": [
    {
-    "text": "Now step back outside.",
+    "text": "Now bring fuel into view.",
     "start": 91.5,
-    "end": 93.148
+    "end": 93.254
    },
    {
-    "text": "Fuel and inside sales are usually reviewed apart.",
-    "start": 93.448,
-    "end": 97.249
+    "text": "Pump sales and inside sales are usually reviewed apart.",
+    "start": 93.554,
+    "end": 97.719
    },
    {
     "text": "Put them in one operating picture, and the decision changes.",
-    "start": 97.549,
-    "end": 101.545
+    "start": 98.019,
+    "end": 102.015
    },
    {
     "text": "In this example, evening pump traffic is up, but inside sales have not followed.",
-    "start": 101.845,
-    "end": 107.264
+    "start": 102.315,
+    "end": 107.734
    },
    {
     "text": "Looking at food sales alone, you might cut back on prep.",
-    "start": 107.565,
-    "end": 111.302
+    "start": 108.034,
+    "end": 111.771
    },
    {
-    "text": "With the pumps in view, the better move is to staff the counter, and invite those drivers inside.",
-    "start": 111.602,
-    "end": 117.935
+    "text": "With fuel in view, the better move is to staff the counter, and invite those drivers inside.",
+    "start": 112.071,
+    "end": 118.222
    }
   ]
  },
@@ -217,40 +217,45 @@
  {
   "id": "v8",
   "start": 156.5,
-  "dur": 21.363,
-  "speed": 0.95,
-  "text": "PI StationOS is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. It is not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
-  "tts": "Pie Station O S is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. It's not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
+  "dur": 27.801,
+  "speed": 1.01,
+  "text": "PI StationOS is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. The goal is simple: catch problems earlier, so less is lost to empty shelves, missed sales and loose ends. It is not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
+  "tts": "Pie Station O S is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control. The goal is simple: catch problems earlier, so less is lost to empty shelves, missed sales and loose ends. It's not connected to this store today. We want to build it with owners who know the work. See the concept. Shape the pilot. Ask for a demo.",
   "sentences": [
    {
     "text": "PI StationOS is a proposed way to help owners run the whole station, fuel, shelves, counter and shifts, with more clarity and more control.",
     "start": 156.5,
-    "end": 167.152
+    "end": 166.643
+   },
+   {
+    "text": "The goal is simple: catch problems earlier, so less is lost to empty shelves, missed sales and loose ends.",
+    "start": 166.943,
+    "end": 173.803
    },
    {
     "text": "It is not connected to this store today.",
-    "start": 167.452,
-    "end": 169.618
+    "start": 174.103,
+    "end": 176.254
    },
    {
     "text": "We want to build it with owners who know the work.",
-    "start": 169.918,
-    "end": 172.537
+    "start": 176.554,
+    "end": 179.119
    },
    {
     "text": "See the concept.",
-    "start": 173.157,
-    "end": 174.271
+    "start": 179.739,
+    "end": 180.823
    },
    {
     "text": "Shape the pilot.",
-    "start": 174.891,
-    "end": 176.041
+    "start": 181.443,
+    "end": 182.512
    },
    {
     "text": "Ask for a demo.",
-    "start": 176.661,
-    "end": 177.863
+    "start": 183.132,
+    "end": 184.301
    }
   ]
  }

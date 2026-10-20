@@ -40,9 +40,20 @@ class Decoder:
         try: self.p.kill()
         except Exception: pass
 
+_stills = {}
+def still(path):
+    """Real store photo as a cairo surface (EXIF orientation applied)."""
+    if path not in _stills:
+        from PIL import Image, ImageOps
+        im = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+        a = np.dstack([np.asarray(im)[:, :, ::-1], np.full(im.size[::-1], 255, np.uint8)]).copy()
+        _stills[path] = (cairo.ImageSurface.create_for_data(memoryview(a), cairo.FORMAT_ARGB32, im.size[0], im.size[1]), a)
+    return _stills[path][0]
+
 class Pool:
     def __init__(self): self.d = {}
     def frame(self, key, path, t):
+        if path.lower().endswith((".jpg", ".jpeg", ".png")): return still(path)
         dec = self.d.get(key)
         if dec is None or int(round((t - dec.t0) * FPS)) < dec.n - 1 or (t - dec.t0) * FPS > dec.n + 45:
             if dec: dec.close()
@@ -61,7 +72,7 @@ def slate(cr, rect, label, t):
     s = min(w / 1920, h / 1080) ** .5
     text(cr, "REAL FOOTAGE SLOT", x + w / 2, y + h / 2 - 20 * s, 22 * s, AMBER, .9, bold=True, align='center', track=3)
     text(cr, label, x + w / 2, y + h / 2 + 30 * s, 34 * s, WHITE, .9, align='center')
-    text(cr, "awaiting authentic.mp4", x + w / 2, y + h / 2 + 72 * s, 20 * s, MUTED, .9, align='center')
+    text(cr, "awaiting source", x + w / 2, y + h / 2 + 72 * s, 20 * s, MUTED, .9, align='center')
 
 def draw_shot(cr, pool, key, path, src_t, rect, cx=.5, cy=.5, zoom=1.0, fit='cover', label='', grade=1.0, t=0):
     """Draw source frame into rect. (cx,cy) = normalized focus point in source; zoom >= 1 punches in."""

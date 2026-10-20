@@ -1,5 +1,4 @@
-"""Original score + sound design + narration mix for the 3-minute film (all synthesized locally; no third-party audio).
-If authentic.mp4 is present, its location sound is used as a low ambience bed under each shot."""
+"""Original score + sound design + room tone + narration mix (all synthesized locally; no third-party audio)."""
 import numpy as np, json, os, subprocess, soundfile as sf
 from scipy import signal
 import timeline as TL
@@ -57,8 +56,9 @@ section(62.5, 90.8, .9, arp=True, pulse=True, bright=1500)
 section(90.8, 124.5, .9, arp=True, pulse=True, bright=1600)
 section(124.5, 143.6, .8, arp=True, pulse=False, bright=1400)
 section(143.6, 156.2, 1.0, arp=True, pulse=False, bright=1900)
-section(156.2, 180.0, .95, arp=True, pulse=False, bright=1700)
-put(MUS, TL.S("v8", 3) - .1, hit(), .35)
+section(156.2, DUR, .95, arp=True, pulse=False, bright=1700)
+put(MUS, TL.S("v8", 4) - .1, hit(), .35)
+for j in range(3): put(FX, TL.S("v8", 1) + .3 + j * .9, chime([1047 + j * 120, 1568]), .07, -.3)
 
 # ---- sound design cued to on-screen events
 S = TL.S
@@ -81,19 +81,11 @@ for j, dt in enumerate((.6, 1.8, 3.2)): put(FX, S("v6", 3) + dt, blip(1047 + 200
 put(FX, 143.9, chime([988, 1319]), .1, .3)                        # phone notification
 s3 = S("v7", 3); put(FX, s3 + .3, tap(), .3, .3); put(FX, s3 + .55, chime([1047, 1568]), .13, .3)
 
-# ---- location sound from the real footage (if available)
-if os.path.exists(TL.SRC):
-    for s in TL.SHOTS:
-        a = TL.SLOTS[s["slot"]][0]
-        if a is None or s["rect"] not in (TL.FULL, TL.TILES[0], TL.LEFT): continue
-        src_t = a + s["off"]
-        raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{src_t:.3f}", "-t", f"{s['d'] + .1:.3f}", "-i", TL.SRC, "-vn", "-ac", "2", "-ar", str(SR),
-                              "-f", "f32le", "-"], capture_output=True).stdout
-        x = np.frombuffer(raw, np.float32).reshape(-1, 2).astype(float)
-        if len(x) < 100: continue
-        e = env(len(x), .08, .08)[:, None]; i = int(s["t"] * SR); x = x[:N - i]
-        AMB[i:i + len(x)] += x * e[:len(x)]
-    AMB = hp(AMB.T, 70).T
+# ---- room tone: quiet synthesized store ambience (cooler hum + air), under the real-photo scenes
+t_ = tv(DUR); hum = .5 * np.sin(2 * np.pi * 120 * t_) + .25 * np.sin(2 * np.pi * 240 * t_ + 1.0)
+air = lp(rng.standard_normal(len(t_)), 700)
+room = (hum * .15 + air) * (1 + .1 * np.sin(2 * np.pi * .07 * t_))
+AMB[:, 0] = room; AMB[:, 1] = np.roll(room, 997)
 
 # ---- narration
 VO = np.zeros(N)
@@ -106,7 +98,7 @@ VO *= .5 / np.max(np.abs(VO))
 act = np.convolve((np.abs(VO) > 1e-3).astype(float), np.ones(int(.3 * SR)), 'same') > 0
 duck = np.convolve(np.where(act, .32, 1.0), np.ones(int(.35 * SR)) / int(.35 * SR), 'same')[:, None]
 amb_peak = np.max(np.abs(AMB)) or 1
-mix = MUS * .55 * duck + FX * .8 + AMB / amb_peak * .12 * (.5 + .5 * duck) + VO[:, None]
+mix = MUS * .55 * duck + FX * .8 + AMB / amb_peak * .035 * (.6 + .4 * duck) + VO[:, None]
 f = np.ones(N); f[:int(1.2 * SR)] = np.linspace(0, 1, int(1.2 * SR)); f[-int(1.2 * SR):] = np.linspace(1, 0, int(1.2 * SR))
 mix *= f[:, None]; mix /= np.max(np.abs(mix)) / .89
 sf.write("mix.wav", mix.astype(np.float32), SR, subtype="FLOAT"); sf.write("stem_vo.wav", VO.astype(np.float32), SR, subtype="FLOAT")

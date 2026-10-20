@@ -1,26 +1,30 @@
 """Edit decision list + overlay sequences for the 3-minute PI StationOS film.
-Footage = authentic.mp4 (real store). Every PI interface is a labeled concept simulation with fictional figures."""
+Visuals = real photos of the store supplied by the owner. Every PI interface is a labeled concept simulation with fictional figures."""
 import cairo, json, math, os
 from lib import *
 from footage import draw_shot, SRC_DIR
 
-SRC = os.path.join(SRC_DIR, "authentic.mp4")
+PH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "photos")
 VO = {m["id"]: m for m in json.load(open(os.path.join(os.path.dirname(__file__), "vo.json")))}
 def S(vid, i, frac=0.0):
     """Time of sentence i of narration block vid (+fraction through it)."""
     s = VO[vid]["sentences"][i]; return s["start"] + frac * (s["end"] - s["start"])
-TOTAL = 180.0
+TOTAL = 186.0
 
-# ---------------------------------------------------------------- footage slots
-# name: (source in-point seconds, usable length, focus cx, cy, description). Set after inspecting authentic.mp4.
+# ---------------------------------------------------------------- real store photos (supplied by the owner)
+# name: (file, default focus cx, cy, description)
 SLOTS = {
-    "pumps_wide":   (None, 8, .5, .5, "Night pumps — wide"),
-    "pumps_detail": (None, 6, .5, .5, "Night pumps — detail"),
-    "entrance":     (None, 6, .5, .5, "Entrance"),
-    "counter":      (None, 8, .5, .5, "Counter"),
-    "food":         (None, 8, .5, .5, "Food service"),
-    "aisle":        (None, 8, .5, .5, "Aisles"),
-    "cooler":       (None, 10, .5, .5, "Coolers"),
+    "counter":   ("01_7085d44f.jpg", .5, .5, "Front counter and register"),
+    "overview":  ("02_fddc8a7d.jpg", .5, .5, "Counter side, freezers, boiled peanuts, ATM"),
+    "food":      ("03_967c66ed.jpg", .5, .45, "Hunt Brothers Pizza food-service counter"),
+    "coffee":    ("04_e2416f49.jpg", .5, .5, "Coffee and fountain station, aisle to coolers"),
+    "jerky":     ("05_41ad01a6.jpg", .5, .5, "Snack aisle, jerky display, 'Irvington Food Mart' cooler banner"),
+    "candy":     ("06_1a793f3c.jpg", .5, .5, "Candy aisle and endcap"),
+    "coolrun":   ("07_8208a20a.jpg", .5, .5, "Cooler doors along the aisle (portrait)"),
+    "cooldoor":  ("08_81b57a92.jpg", .5, .5, "Cooler doors, close angle"),
+    "monster":   ("09_ff7d3162.jpg", .5, .5, "Energy-drink cooler wall"),
+    "chips":     ("10_043b4174.jpg", .5, .5, "Chips aisle, coolers, back wall"),
+    "wide":      ("11_5b64931f.jpg", .5, .5, "Wide aisle view: beer, wine, snacks"),
 }
 FIT = 'cover'
 
@@ -30,58 +34,58 @@ TILES = [(0, 0, W / 2 - G / 2, H / 2 - G / 2), (W / 2 + G / 2, 0, W / 2 - G / 2,
          (0, H / 2 + G / 2, W / 2 - G / 2, H / 2 - G / 2), (W / 2 + G / 2, H / 2 + G / 2, W / 2 - G / 2, H / 2 - G / 2)]
 LEFT = (0, 0, W / 2 - G / 2, H); RIGHT = (W / 2 + G / 2, 0, W / 2 - G / 2, H)
 
-# ---------------------------------------------------------------- shot list
-# (start, dur, slot, offset into slot, rect, zoom0, zoom1, dx, dy (pan in normalized units), fade_in)
+# ---------------------------------------------------------------- shot list (stills with deliberate camera moves)
+# (start, dur, slot, rect, zoom0 -> zoom1, focus cx,cy, pan dx,dy across the shot, dissolve-in, dim)
 SHOTS = []
-def shot(t, d, slot, off=0.0, rect=FULL, z0=1.0, z1=1.06, dx=0.0, dy=0.0, fade=0.0, grade=1.0, layer=0):
-    SHOTS.append(dict(t=t, d=d, slot=slot, off=off, rect=rect, z0=z0, z1=z1, dx=dx, dy=dy, fade=fade, grade=grade, layer=layer))
+def shot(t, d, slot, rect=FULL, z0=1.0, z1=1.08, cx=None, cy=None, dx=0.0, dy=0.0, fade=0.0, grade=1.0, fit=None):
+    SHOTS.append(dict(t=t, d=d, slot=slot, off=0, rect=rect, z0=z0, z1=z1, cx=cx, cy=cy, dx=dx, dy=dy, fade=fade, grade=grade, fit=fit))
 
-# A. 0:00-0:25 the real station
-shot(0.0, 7.5, "pumps_wide", 0, z0=1.0, z1=1.10, fade=1.2)
-shot(7.5, 3.5, "pumps_detail", 0, z0=1.05, z1=1.12)
-shot(11.0, 3.2, "entrance", 0, z0=1.0, z1=1.08)
-shot(14.2, 3.4, "counter", 0, z0=1.02, z1=1.09, dx=.03)
-shot(17.6, 3.4, "food", 0, z0=1.02, z1=1.08, dx=-.03)
-shot(21.0, 2.2, "aisle", 0, z0=1.0, z1=1.06)
-shot(23.2, 2.3, "cooler", 0, z0=1.0, z1=1.05)
-# B. 0:25-0:50 owner's problem: four separate views
-shot(25.5, 24.5, "pumps_wide", 1.5, TILES[0], 1.08, 1.14)
-shot(25.5, 24.5, "cooler", 2.5, TILES[1], 1.1, 1.16)
-shot(25.5, 24.5, "counter", 2.0, TILES[2], 1.1, 1.16)
-shot(25.5, 24.5, "food", 2.0, TILES[3], 1.1, 1.16)
-# C. 0:50-1:30 inventory: before then after
-shot(50.0, 6.0, "cooler", 0.5, z0=1.0, z1=1.14, fade=.6)
-shot(56.0, 6.5, "cooler", 4.0, z0=1.25, z1=1.32, dx=.08)  # close detail crop (old way)
-shot(62.5, 28.3, "cooler", 1.0, z0=1.12, z1=1.2, dx=-.06, grade=.62, fade=.8)  # PI concept: same cooler, dimmed for panel
-# D. 1:30-2:05 one operating picture
-shot(90.8, 3.7, "pumps_wide", 2.0, z0=1.05, z1=1.15, fade=.5)
-shot(94.5, 3.0, "entrance", 2.0, z0=1.05, z1=1.15)
-shot(97.5, 27.0, "pumps_detail", 1.0, LEFT, 1.1, 1.18, grade=.55)
-shot(97.5, 27.0, "food", 1.0, RIGHT, 1.1, 1.18, grade=.55)
-# E. 2:05-2:35 shift handoff, then owner phone
-shot(124.5, 5.0, "counter", 1.0, z0=1.0, z1=1.08, fade=.6)
-shot(129.5, 14.5, "counter", 3.0, z0=1.1, z1=1.2, dx=-.05, grade=.6)
-shot(144.0, 12.5, "food", 3.0, z0=1.15, z1=1.22, grade=.45, fade=.6)
-# F. 2:35-3:00 invitation: real store, back to the pumps
-shot(156.0, 3.6, "entrance", 3.0, z0=1.0, z1=1.07, fade=.6)
-shot(159.6, 3.4, "aisle", 3.0, z0=1.0, z1=1.07, dx=.04)
-shot(163.0, 3.3, "food", 4.0, z0=1.0, z1=1.06)
-shot(166.3, 3.2, "counter", 4.5, z0=1.0, z1=1.06)
-shot(169.5, 10.5, "pumps_wide", 3.0, z0=1.12, z1=1.0, grade=.75, fade=.5)
+# A. 0:00-0:25 the real store
+shot(0.0, 5.4, "wide", z0=1.0, z1=1.14, cy=.45, fade=1.2)                 # push down the main aisle
+shot(5.4, 3.6, "jerky", z0=1.12, z1=1.2, cx=.55, cy=.3, dx=-.08)          # 'Irvington Food Mart' banner
+shot(9.0, 3.4, "counter", z0=1.0, z1=1.07, cy=.55)
+shot(12.4, 3.2, "food", z0=1.02, z1=1.1, cy=.42, dx=.05)
+shot(15.6, 3.0, "coffee", z0=1.05, z1=1.12, cx=.4, dx=.08)
+shot(18.6, 3.0, "candy", z0=1.04, z1=1.1, cx=.55, dx=-.06)
+shot(21.6, 4.0, "monster", z0=1.0, z1=1.07, cy=.55)
+# B. 0:25-0:50 four separate views (fuel tile is an illustrative data sheet drawn in ov_problem)
+shot(25.5, 24.5, "monster", TILES[1], 1.15, 1.22, cx=.62, cy=.6)
+shot(25.5, 24.5, "counter", TILES[2], 1.5, 1.6, cx=.62, cy=.55)            # register
+shot(25.5, 24.5, "food", TILES[3], 1.25, 1.32, cx=.62, cy=.55)            # food-service case
+# C. 0:50-1:31 inventory: before -> after
+shot(50.0, 6.0, "cooldoor", z0=1.0, z1=1.12, cx=.55, fade=.6)
+shot(56.0, 6.5, "coolrun", z0=1.0, z1=1.06, fit='pillar')
+shot(62.5, 28.3, "monster", z0=1.1, z1=1.2, cx=.4, cy=.6, dx=-.08, grade=.62, fade=.8)
+# D. 1:31-2:05 fuel + store together
+shot(90.8, 3.7, "overview", z0=1.04, z1=1.14, fade=.5)
+shot(94.5, 3.0, "counter", z0=1.12, z1=1.22, cx=.68, cy=.55)
+shot(97.5, 27.0, "counter", LEFT, 1.15, 1.22, cx=.65, cy=.55, grade=.5)
+shot(97.5, 27.0, "food", RIGHT, 1.1, 1.18, cx=.6, cy=.5, grade=.5)
+# E. 2:05-2:36 shift handoff, then owner phone
+shot(124.5, 5.0, "counter", z0=1.0, z1=1.08, fade=.6)
+shot(129.5, 14.5, "counter", z0=1.35, z1=1.45, cx=.3, cy=.55, dx=.05, grade=.55)
+shot(144.0, 12.5, "food", z0=1.15, z1=1.22, cx=.45, grade=.42, fade=.6)
+# F. 2:36-3:06 invitation
+shot(156.0, 4.6, "wide", z0=1.12, z1=1.0, cy=.45, fade=.6)
+shot(160.6, 4.0, "chips", z0=1.0, z1=1.08, dx=.05, grade=.7)
+shot(164.6, 4.2, "jerky", z0=1.06, z1=1.12, cx=.5, cy=.35, grade=.7)
+shot(168.8, 4.2, "coffee", z0=1.0, z1=1.07, grade=.8)
+shot(173.0, 13.0, "counter", z0=1.12, z1=1.0, grade=.8, fade=.5)
 
 def draw_footage(cr, pool, t):
     keep = set()
     for i, s in enumerate(SHOTS):
         if not (s["t"] <= t < s["t"] + s["d"]): continue
-        a, ln, cx, cy, label = SLOTS[s["slot"]]
+        f, cx, cy, label = SLOTS[s["slot"]]
+        cx = s["cx"] if s["cx"] is not None else cx; cy = s["cy"] if s["cy"] is not None else cy
         k = (t - s["t"]) / s["d"]; e = einout(k)
         z = lerp(s["z0"], s["z1"], e)
-        src_t = (a or 0) + s["off"] + (t - s["t"])
+        src_t = 0.0
         key = f"shot{i}"; keep.add(key)
         fa = ease(prog(t, s["t"], s["t"] + s["fade"])) if s["fade"] else 1.0
         cr.push_group()
-        draw_shot(cr, pool, key, SRC if a is not None else None, src_t, s["rect"], cx + s["dx"] * (e - .5), cy + s["dy"] * (e - .5),
-                  z, FIT, label, s["grade"], t)
+        draw_shot(cr, pool, key, os.path.join(PH, f), src_t, s["rect"], cx + s["dx"] * (e - .5), cy + s["dy"] * (e - .5),
+                  z, s["fit"] or FIT, label, s["grade"], t)
         cr.pop_group_to_source(); cr.paint_with_alpha(fa)
     pool.gc(keep)
 
@@ -94,7 +98,7 @@ def sim_badge(cr, a):
     cr.arc(x + 28, y + 25, 7, 0, 6.283); rgba(cr, AMBER, a); cr.fill()
     text(cr, SIM, x + 46, y + 33, 22, AMBER, a, bold=True, track=2)
 
-def real_tag(cr, a, s="REAL STORE FOOTAGE"):
+def real_tag(cr, a, s="REAL STORE PHOTO"):
     if a <= 0: return
     font(cr, 18, 'Inter', True); w = text_w(cr, s, 2.5)
     text(cr, s, W - 52 - w, 70, 18, WHITE, .78 * a, bold=True, track=2.5)
@@ -104,7 +108,7 @@ def scrim(cr, x, y, w, h, a, side='right'):
     if a <= 0: return
     if side == 'right': g = cairo.LinearGradient(x, 0, x + w, 0); g.add_color_stop_rgba(0, *BG, 0); g.add_color_stop_rgba(.35, *BG, .72 * a); g.add_color_stop_rgba(1, *BG, .86 * a)
     elif side == 'left': g = cairo.LinearGradient(x + w, 0, x, 0); g.add_color_stop_rgba(0, *BG, 0); g.add_color_stop_rgba(.35, *BG, .72 * a); g.add_color_stop_rgba(1, *BG, .86 * a)
-    else: g = cairo.LinearGradient(0, y, 0, y + h); g.add_color_stop_rgba(0, *BG, 0); g.add_color_stop_rgba(1, *BG, .85 * a)
+    else: g = cairo.LinearGradient(0, y, 0, y + h); g.add_color_stop_rgba(0, *BG, 0); g.add_color_stop_rgba(.4, *BG, .72 * a); g.add_color_stop_rgba(1, *BG, .9 * a)
     cr.set_source(g); cr.rectangle(x, y, w, h); cr.fill()
 
 def wrap(cr, s, size, maxw, fam='Inter', bold=False):
@@ -150,7 +154,7 @@ def ov_open(cr, t):
     if la > 0:
         scrim(cr, 0, 640, W, 440, la, 'bottom')
         rgba(cr, CYAN, la); cr.rectangle(110, 742, 80 * eout(prog(t, 2.5, 3.4)), 4); cr.fill()
-        headline_on(cr, "IRVINGTON CHEVRON", 110, 800, 50, la)
+        headline_on(cr, "IRVINGTON FOOD MART", 110, 800, 50, la)
         text(cr, "9436 Irvington Bayou La Batre Hwy  ·  Irvington, Alabama", 110, 850, 30, hexc('D9E1EE'), la)
     ha = fade(t, 21.4, 25.3, .6, .5)
     if ha > 0:
@@ -164,6 +168,15 @@ def ov_problem(cr, t):
     if not (25.0 <= t < 50.5): return
     out = 1 - ease(prog(t, 49.4, 50.2))
     real_tag(cr, out)
+    x, y, w, h = TILES[0]
+    g = cairo.LinearGradient(x, y, x, y + h); g.add_color_stop_rgb(0, *BG2); g.add_color_stop_rgb(1, *BG); cr.set_source(g); cr.rectangle(x, y, w, h); cr.fill()
+    fa = eout(prog(t, 25.6, 26.4)) * out
+    cx0, cy0 = x + 330, y + 70
+    card(cr, cx0, cy0, 560, 380, 18, fa, shadow_a=.3)
+    text(cr, "FUEL TOTALS · TODAY", cx0 + 30, cy0 + 48, 18, CYAN, fa, bold=True, track=2)
+    for j, (g_, v) in enumerate((("Regular", "1,412 gal"), ("Plus", "268 gal"), ("Premium", "201 gal"), ("Diesel", "655 gal"))):
+        text(cr, g_, cx0 + 30, cy0 + 112 + j * 58, 28, WHITE, fa); text(cr, v, cx0 + 530, cy0 + 112 + j * 58, 28, WHITE, fa, 'DejaVu Sans Mono', align='right')
+    text(cr, "Illustrative figures", cx0 + 30, cy0 + 352, 18, AMBER, fa, bold=True)
     for (lab, sub, i) in PROB:
         a = eout(prog(t, S("v2", 1) - .3 + i * 1.6, S("v2", 1) + .3 + i * 1.6)) * out
         x, y, w, h = TILES[i]
@@ -212,7 +225,7 @@ def ov_inventory(cr, t):
     E0 = t_dec + .3; A0 = t_dec + 2.0; OK = A0 + .3
     def active(i): return act[i] <= t < (act[i + 1] if i + 1 < len(act) else 99)
     def b1(x, y, a):
-        text(cr, "20 oz cola is selling 1.8× its usual pace", x, y + 46, 30, WHITE, a)
+        text(cr, "16 oz energy drinks: selling 1.8× usual pace", x, y + 46, 30, WHITE, a)
         pts = [3, 3, 4, 3, 4, 5, 7, 8, 9, 11]; sx, sy = x + 640, y - 10
         for j, v in enumerate(pts[:max(2, int(len(pts) * eout(prog(t, t_sig, t_sig + 1.2))))]):
             (cr.move_to if j == 0 else cr.line_to)(sx + j * 17, sy + 40 - v * 3.2)
@@ -225,8 +238,8 @@ def ov_inventory(cr, t):
         para(cr, "At this pace, stock covers about 1.5 days. Proposal: add cases to Thursday's order.", x, y + 44, 28, WHITE, a, Wd - 70)
         qty = 2 if t < E0 + .7 else 3
         ea = eout(prog(t, t_prop + 1.0, t_prop + 1.6)) * a
-        rrect(cr, x, y + 104, 330, 54, 12); rgba(cr, GOLD, .14 * ea); cr.fill()
-        text(cr, f"+{qty} cases · 20 oz cola", x + 18, y + 141, 28, GOLD, ea, bold=True)
+        rrect(cr, x, y + 104, 360, 54, 12); rgba(cr, GOLD, .14 * ea); cr.fill()
+        text(cr, f"+{qty} cases · 16 oz energy", x + 18, y + 141, 28, GOLD, ea, bold=True)
         ns = eout(prog(t, s3, s3 + .5)) * a
         chip(cr, "DRAFT · NOT SENT", x + Wd - 80, y + 128, 22, AMBER, ns * (1 if t < OK else 0), 'right')
     def b5(x, y, a):
@@ -248,7 +261,7 @@ def ov_inventory(cr, t):
     ha = eout(prog(t, 62.8, 63.6)) * pa
     pi_mark(cr, X + 26, 152, 22, ha, ha)
     text(cr, "PI StationOS", X + 62, 146, 22, CYAN, ha, 'Inter Display', True)
-    text(cr, "Inventory watch · cooler 2 · simulated", X + 62, 174, 22, MUTED, ha)
+    text(cr, "Inventory watch · energy-drink cooler · simulated", X + 62, 174, 22, MUTED, ha)
     rows = [("SIGNAL · SALES PACE", CYAN, t_sig, 92, b1), ("SIGNAL · STOCK", CYAN, t_stock, 92, b2), ("FLAG", AMBER, t_flag, 92, b3),
             ("WHY + PROPOSAL", GOLD, t_prop, 196, b4), ("OWNER DECISION", GREEN, t_dec, 142, b5)]
     y = 206
@@ -266,7 +279,7 @@ def ov_picture(cr, t):
     # separate labels while views are apart
     sa = fade(t, 97.6, s2 + .6, .5, .5) * out
     if sa > 0:
-        for (x, lab) in ((W / 4, "FUEL — REVIEWED HERE"), (3 * W / 4, "INSIDE SALES — REVIEWED THERE")):
+        for (x, lab) in ((W / 4, "FUEL REPORT — REVIEWED HERE"), (3 * W / 4, "STORE REPORT — REVIEWED THERE")):
             chip(cr, lab, x, H / 2, 26, WHITE, sa, 'center', fill_a=.25)
         cr.set_line_width(4); rgba(cr, WHITE, .5 * sa); cr.set_dash([12, 12]); cr.move_to(W / 2, 140); cr.line_to(W / 2, H - 180); cr.stroke(); cr.set_dash([])
     pa = ease(prog(t, s2, s2 + .8)) * out
@@ -316,7 +329,7 @@ def ov_picture(cr, t):
     if ob > 0:
         bx, by, bw, bh = 980, 670, 640, 210
         card(cr, bx, by, bw, bh, 20, ob, glow=GOLD, shadow_a=.3)
-        text(cr, "WITH THE PUMPS IN VIEW", bx + 32, by + 48, 20, GOLD, ob, bold=True, track=2)
+        text(cr, "WITH FUEL IN VIEW", bx + 32, by + 48, 20, GOLD, ob, bold=True, track=2)
         text(cr, "Staff the counter 5–8 PM", bx + 32, by + 104, 40, WHITE, ob, 'Inter Display', True)
         text(cr, "Invite drivers inside · owner's call", bx + 32, by + 150, 26, hexc('D9E1EE'), ob)
         chip(cr, "PROPOSED · OWNER DECIDES", bx + bw - 30, by + bh - 34, 17, GOLD, eout(prog(t, s5 + 1.5, s5 + 2.1)) * ob, 'right')
@@ -404,7 +417,7 @@ def phone_screen(t, s1, s2, s3):
         rrect(cr, 32, by, sw - 64, 56, 28); rgba(cr, GREEN, .18 * k); cr.fill()
         check(cr, 64, by + 29, 24, GREEN, k, k)
         text(cr, "Approved by you · 9:41 PM", 90, by + 36, 19, GREEN, k, bold=True)
-    text(cr, "Also waiting: cola reorder draft (approved)", 30, 680, 15, MUTED, 1)
+    text(cr, "Also: energy-drink reorder draft (approved)", 30, 680, 15, MUTED, 1)
     text(cr, "Evening staffing proposal · review", 30, 708, 15, MUTED, 1)
     return s
 
@@ -438,28 +451,40 @@ def ov_phone(cr, t):
 # ================================================================ F. invitation
 def ov_close(cr, t):
     if t < 156.0: return
-    real_tag(cr, fade(t, 156.3, 169.6, .4, .4))
-    s0, s1, s2, s3, s4, s5 = (S("v8", i) for i in range(6))
-    la = fade(t, s0 + .2, s1 + .3, .6, .5)
+    real_tag(cr, fade(t, 156.3, S("v8", 4) - .4, .4, .4))
+    s = [S("v8", i) for i in range(7)]
+    la = fade(t, s[0] + .2, s[1] - .1, .6, .5)
     if la > 0:
         scrim(cr, 0, 560, W, 520, la, 'bottom')
         headline_on(cr, "A proposed way to run the whole station", 110, 760, 58, la)
         headline_on(cr, "with more clarity and control.", 110, 834, 58, la, CYAN)
-    na = fade(t, s1, s3 - .1, .5, .5)
+    # where PI is designed to help: recap of the three stories (goals, not measured results)
+    ra = fade(t, s[1] - .1, s[2] - .1, .5, .5)
+    if ra > 0:
+        scrim(cr, 0, 0, 1500, H, ra, 'left')
+        text(cr, "DESIGNED TO CATCH EARLIER", 110, 300, 22, GOLD, ra, bold=True, track=3)
+        rows = [("Empty shelves", "flagged before the cooler runs out"), ("Missed inside sales", "seen next to fuel traffic"), ("Loose ends", "tracked from handoff to done")]
+        for j, (a_, b_) in enumerate(rows):
+            k = eout(prog(t, s[1] + .3 + j * .9, s[1] + .8 + j * .9)) * ra; y = 350 + j * 130
+            card(cr, 110, y, 900, 106, 18, k, shadow_a=.35)
+            check(cr, 160, y + 54, 30, GREEN, k, k)
+            text(cr, a_, 210, y + 48, 36, WHITE, k, 'Inter Display', True); text(cr, b_, 210, y + 84, 24, hexc('D9E1EE'), k)
+        text(cr, "Goals of the concept — no results measured yet", 110, 770, 22, MUTED, ra)
+    na = fade(t, s[2], s[4] - .1, .5, .5)
     if na > 0:
         rrect(cr, 110, 700, 1060, 150, 20); rgba(cr, BG, .88 * na); cr.fill_preserve(); rgba(cr, AMBER, .7 * na); cr.set_line_width(2); cr.stroke()
         text(cr, "CONCEPT STAGE", 146, 748, 22, AMBER, na, bold=True, track=3)
         text(cr, "Not connected to this store today. Built with owners.", 146, 808, 36, WHITE, na, 'Inter Display', True)
-    ea = ease(prog(t, s3 - .4, s3 + .4))
+    ea = ease(prog(t, s[4] - .4, s[4] + .4))
     if ea > 0:
-        g = cairo.RadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 1100); g.add_color_stop_rgba(0, *BG, .7 * ea); g.add_color_stop_rgba(1, *BG, .9 * ea)
+        g = cairo.RadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 1100); g.add_color_stop_rgba(0, *BG, .72 * ea); g.add_color_stop_rgba(1, *BG, .9 * ea)
         cr.set_source(g); cr.paint()
         pi_mark(cr, W / 2, 250, 70, ea, ea)
         wordmark(cr, W / 2, 420, 84, ea)
-        for j, (s, t0, c) in enumerate((("See the concept.", s3, WHITE), ("Shape the pilot.", s4, WHITE), ("Ask for a demo.", s5, GOLD))):
-            headline_on(cr, s, W / 2, 570 + j * 100, 76, eout(prog(t, t0, t0 + .5)), c, 'center', shadow=False)
+        for j, (s_, t0, c) in enumerate((("See the concept.", s[4], WHITE), ("Shape the pilot.", s[5], WHITE), ("Ask for a demo.", s[6], GOLD))):
+            headline_on(cr, s_, W / 2, 570 + j * 100, 76, eout(prog(t, t0, t0 + .5)), c, 'center', shadow=False)
         text(cr, "Concept stage  ·  interfaces shown are simulations with illustrative data", W / 2, 920, 24, MUTED, ea * .9, align='center')
-    end = ease(prog(t, 179.0, 180.0))
+    end = ease(prog(t, TOTAL - 1.0, TOTAL))
     if end > 0: rgba(cr, (0, 0, 0), end); cr.paint()
 
 OVERLAYS = [ov_open, ov_problem, ov_inventory, ov_picture, ov_shift, ov_phone, ov_close]
@@ -481,7 +506,7 @@ def caption_units():
                 units.append((t, t + d, ' '.join(c))); t += d
     return units
 def _mirrored(a):
-    return any(S(v, i) - .05 <= a < VO[v]["sentences"][i]["end"] for (v, i) in (("v7", 1), ("v7", 2), ("v7", 3), ("v8", 0), ("v8", 1), ("v8", 3), ("v8", 4), ("v8", 5)))
+    return any(S(v, i) - .05 <= a < VO[v]["sentences"][i]["end"] for (v, i) in (("v7", 1), ("v7", 2), ("v7", 3), ("v8", 0), ("v8", 2), ("v8", 4), ("v8", 5), ("v8", 6)))
 CAPS = [c for c in caption_units() if not _mirrored(c[0])]
 
 def draw_captions(cr, t):

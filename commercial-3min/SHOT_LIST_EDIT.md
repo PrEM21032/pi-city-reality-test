@@ -1,54 +1,56 @@
-# Exact shot list — PI StationOS 3-minute film
+# Exact shot list — PI StationOS film (3:06)
 
-Source: `authentic.mp4` (real store footage). Source in/out = slot in-point + offset. All interface graphics are labeled **Concept simulation — illustrative data**.
+Visual source: 11 real photos of Irvington Food Mart supplied by the owner (`photos/`). Each shot is a still with a deliberate camera move (punch-in / pan). All PI interface graphics are labeled **Concept simulation — illustrative data**. No pump/forecourt photo was supplied, so fuel appears only as labeled illustrative data.
 
-> **Status:** footage slot in-points are not set yet (authentic.mp4 not received). Timeline positions, crops and durations are final; source times are filled in after inspection.
+## Photo sources
 
-## Footage slots
-
-| Slot | Source in (s) | Usable length (s) | Content |
-|---|---|---|---|
-| `pumps_wide` | — | 8 | Night pumps — wide |
-| `pumps_detail` | — | 6 | Night pumps — detail |
-| `entrance` | — | 6 | Entrance |
-| `counter` | — | 8 | Counter |
-| `food` | — | 8 | Food service |
-| `aisle` | — | 8 | Aisles |
-| `cooler` | — | 10 | Coolers |
+| Slot | File | Content |
+|---|---|---|
+| `counter` | `01_7085d44f.jpg` | Front counter and register |
+| `overview` | `02_fddc8a7d.jpg` | Counter side, freezers, boiled peanuts, ATM |
+| `food` | `03_967c66ed.jpg` | Hunt Brothers Pizza food-service counter |
+| `coffee` | `04_e2416f49.jpg` | Coffee and fountain station, aisle to coolers |
+| `jerky` | `05_41ad01a6.jpg` | Snack aisle, jerky display, 'Irvington Food Mart' cooler banner |
+| `candy` | `06_1a793f3c.jpg` | Candy aisle and endcap |
+| `coolrun` | `07_8208a20a.jpg` | Cooler doors along the aisle (portrait) |
+| `cooldoor` | `08_81b57a92.jpg` | Cooler doors, close angle |
+| `monster` | `09_ff7d3162.jpg` | Energy-drink cooler wall |
+| `chips` | `10_043b4174.jpg` | Chips aisle, coolers, back wall |
+| `wide` | `11_5b64931f.jpg` | Wide aisle view: beer, wine, snacks |
 
 ## Edit decision list
 
-| # | Film in | Film out | Dur | Slot | Source in → out | Layout | Move |
-|---|---|---|---|---|---|---|---|
-| | **A · The real station** | | | | | | |
-| 1 | 0:00.00 | 0:07.50 | 7.5s | `pumps_wide` | +0.0 → +7.5 | full frame | zoom 1.00→1.10, 1.2s dissolve in |
-| 2 | 0:07.50 | 0:11.00 | 3.5s | `pumps_detail` | +0.0 → +3.5 | full frame | zoom 1.05→1.12, cut |
-| 3 | 0:11.00 | 0:14.20 | 3.2s | `entrance` | +0.0 → +3.2 | full frame | zoom 1.00→1.08, cut |
-| 4 | 0:14.20 | 0:17.60 | 3.4s | `counter` | +0.0 → +3.4 | full frame | zoom 1.02→1.09, pan +0.03, cut |
-| 5 | 0:17.60 | 0:21.00 | 3.4s | `food` | +0.0 → +3.4 | full frame | zoom 1.02→1.08, pan -0.03, cut |
-| 6 | 0:21.00 | 0:23.20 | 2.2s | `aisle` | +0.0 → +2.2 | full frame | zoom 1.00→1.06, cut |
-| 7 | 0:23.20 | 0:25.50 | 2.3s | `cooler` | +0.0 → +2.3 | full frame | zoom 1.00→1.05, cut |
-| | **B · The owner's problem** | | | | | | |
-| 8 | 0:25.50 | 0:50.00 | 24.5s | `pumps_wide` | +1.5 → +26.0 | quad tile 1 | zoom 1.08→1.14, cut |
-| 9 | 0:25.50 | 0:50.00 | 24.5s | `counter` | +2.0 → +26.5 | quad tile 3 | zoom 1.10→1.16, cut |
-| 10 | 0:25.50 | 0:50.00 | 24.5s | `cooler` | +2.5 → +27.0 | quad tile 2 | zoom 1.10→1.16, cut |
-| 11 | 0:25.50 | 0:50.00 | 24.5s | `food` | +2.0 → +26.5 | quad tile 4 | zoom 1.10→1.16, cut |
-| | **C · Inventory: before → after** | | | | | | |
-| 12 | 0:50.00 | 0:56.00 | 6.0s | `cooler` | +0.5 → +6.5 | full frame | zoom 1.00→1.14, 0.6s dissolve in |
-| 13 | 0:56.00 | 1:02.50 | 6.5s | `cooler` | +4.0 → +10.5 | full frame | zoom 1.25→1.32, pan +0.08, cut |
-| 14 | 1:02.50 | 1:30.80 | 28.3s | `cooler` | +1.0 → +29.3 | full frame | zoom 1.12→1.20, pan -0.06, dimmed 38% for overlay, 0.8s dissolve in |
-| | **D · One operating picture** | | | | | | |
-| 15 | 1:30.80 | 1:34.50 | 3.7s | `pumps_wide` | +2.0 → +5.7 | full frame | zoom 1.05→1.15, 0.5s dissolve in |
-| 16 | 1:34.50 | 1:37.50 | 3.0s | `entrance` | +2.0 → +5.0 | full frame | zoom 1.05→1.15, cut |
-| 17 | 1:37.50 | 2:04.50 | 27.0s | `pumps_detail` | +1.0 → +28.0 | split · left | zoom 1.10→1.18, dimmed 44% for overlay, cut |
-| 18 | 1:37.50 | 2:04.50 | 27.0s | `food` | +1.0 → +28.0 | split · right | zoom 1.10→1.18, dimmed 44% for overlay, cut |
-| | **E · Shift handoff + owner control** | | | | | | |
-| 19 | 2:04.50 | 2:09.50 | 5.0s | `counter` | +1.0 → +6.0 | full frame | zoom 1.00→1.08, 0.6s dissolve in |
-| 20 | 2:09.50 | 2:24.00 | 14.5s | `counter` | +3.0 → +17.5 | full frame | zoom 1.10→1.20, pan -0.05, dimmed 40% for overlay, cut |
-| 21 | 2:24.00 | 2:36.50 | 12.5s | `food` | +3.0 → +15.5 | full frame | zoom 1.15→1.22, dimmed 55% for overlay, 0.6s dissolve in |
-| | **F · Invitation** | | | | | | |
-| 22 | 2:36.00 | 2:39.60 | 3.6s | `entrance` | +3.0 → +6.6 | full frame | zoom 1.00→1.07, 0.6s dissolve in |
-| 23 | 2:39.60 | 2:43.00 | 3.4s | `aisle` | +3.0 → +6.4 | full frame | zoom 1.00→1.07, pan +0.04, cut |
-| 24 | 2:43.00 | 2:46.30 | 3.3s | `food` | +4.0 → +7.3 | full frame | zoom 1.00→1.06, cut |
-| 25 | 2:46.30 | 2:49.50 | 3.2s | `counter` | +4.5 → +7.7 | full frame | zoom 1.00→1.06, cut |
-| 26 | 2:49.50 | 3:00.00 | 10.5s | `pumps_wide` | +3.0 → +13.5 | full frame | zoom 1.12→1.00, dimmed 25% for overlay, 0.5s dissolve in |
+| # | In | Out | Dur | Photo | Layout | Move |
+|---|---|---|---|---|---|---|
+| | **A · The real store** | | | | | |
+| 1 | 0:00.00 | 0:05.40 | 5.4s | `11_5b64931f.jpg` (wide) | full frame | zoom 1.00→1.14 on (0.50, 0.45), 1.2s dissolve in |
+| 2 | 0:05.40 | 0:09.00 | 3.6s | `05_41ad01a6.jpg` (jerky) | full frame | zoom 1.12→1.20 on (0.55, 0.30), pan -0.08, cut |
+| 3 | 0:09.00 | 0:12.40 | 3.4s | `01_7085d44f.jpg` (counter) | full frame | zoom 1.00→1.07 on (0.50, 0.55), cut |
+| 4 | 0:12.40 | 0:15.60 | 3.2s | `03_967c66ed.jpg` (food) | full frame | zoom 1.02→1.10 on (0.50, 0.42), pan +0.05, cut |
+| 5 | 0:15.60 | 0:18.60 | 3.0s | `04_e2416f49.jpg` (coffee) | full frame | zoom 1.05→1.12 on (0.40, 0.50), pan +0.08, cut |
+| 6 | 0:18.60 | 0:21.60 | 3.0s | `06_1a793f3c.jpg` (candy) | full frame | zoom 1.04→1.10 on (0.55, 0.50), pan -0.06, cut |
+| 7 | 0:21.60 | 0:25.60 | 4.0s | `09_ff7d3162.jpg` (monster) | full frame | zoom 1.00→1.07 on (0.50, 0.55), cut |
+| | **B · The owner's problem** | | | | | |
+| 8 | 0:25.50 | 0:50.00 | 24.5s | `01_7085d44f.jpg` (counter) | quad tile 3 | zoom 1.50→1.60 on (0.62, 0.55), cut |
+| 9 | 0:25.50 | 0:50.00 | 24.5s | `09_ff7d3162.jpg` (monster) | quad tile 2 | zoom 1.15→1.22 on (0.62, 0.60), cut |
+| 10 | 0:25.50 | 0:50.00 | 24.5s | `03_967c66ed.jpg` (food) | quad tile 4 | zoom 1.25→1.32 on (0.62, 0.55), cut |
+| | **C · Inventory: before → after** | | | | | |
+| 11 | 0:50.00 | 0:56.00 | 6.0s | `08_81b57a92.jpg` (cooldoor) | full frame | zoom 1.00→1.12 on (0.55, 0.50), 0.6s dissolve in |
+| 12 | 0:56.00 | 1:02.50 | 6.5s | `07_8208a20a.jpg` (coolrun) | full frame | zoom 1.00→1.06 on (0.50, 0.50), blurred-surround pillar, cut |
+| 13 | 1:02.50 | 1:30.80 | 28.3s | `09_ff7d3162.jpg` (monster) | full frame | zoom 1.10→1.20 on (0.40, 0.60), pan -0.08, dimmed 38% under interface, 0.8s dissolve in |
+| | **D · Fuel + store: one operating picture** | | | | | |
+| 14 | 1:30.80 | 1:34.50 | 3.7s | `02_fddc8a7d.jpg` (overview) | full frame | zoom 1.04→1.14 on (0.50, 0.50), 0.5s dissolve in |
+| 15 | 1:34.50 | 1:37.50 | 3.0s | `01_7085d44f.jpg` (counter) | full frame | zoom 1.12→1.22 on (0.68, 0.55), cut |
+| 16 | 1:37.50 | 2:04.50 | 27.0s | `01_7085d44f.jpg` (counter) | split · left | zoom 1.15→1.22 on (0.65, 0.55), dimmed 50% under interface, cut |
+| 17 | 1:37.50 | 2:04.50 | 27.0s | `03_967c66ed.jpg` (food) | split · right | zoom 1.10→1.18 on (0.60, 0.50), dimmed 50% under interface, cut |
+| | **E · Shift handoff + owner control** | | | | | |
+| 18 | 2:04.50 | 2:09.50 | 5.0s | `01_7085d44f.jpg` (counter) | full frame | zoom 1.00→1.08 on (0.50, 0.50), 0.6s dissolve in |
+| 19 | 2:09.50 | 2:24.00 | 14.5s | `01_7085d44f.jpg` (counter) | full frame | zoom 1.35→1.45 on (0.30, 0.55), pan +0.05, dimmed 44% under interface, cut |
+| 20 | 2:24.00 | 2:36.50 | 12.5s | `03_967c66ed.jpg` (food) | full frame | zoom 1.15→1.22 on (0.45, 0.45), dimmed 58% under interface, 0.6s dissolve in |
+| | **F · Invitation** | | | | | |
+| 21 | 2:36.00 | 2:40.60 | 4.6s | `11_5b64931f.jpg` (wide) | full frame | zoom 1.12→1.00 on (0.50, 0.45), 0.6s dissolve in |
+| 22 | 2:40.60 | 2:44.60 | 4.0s | `10_043b4174.jpg` (chips) | full frame | zoom 1.00→1.08 on (0.50, 0.50), pan +0.05, dimmed 30% under interface, cut |
+| 23 | 2:44.60 | 2:48.80 | 4.2s | `05_41ad01a6.jpg` (jerky) | full frame | zoom 1.06→1.12 on (0.50, 0.35), dimmed 30% under interface, cut |
+| 24 | 2:48.80 | 2:53.00 | 4.2s | `04_e2416f49.jpg` (coffee) | full frame | zoom 1.00→1.07 on (0.50, 0.50), dimmed 19% under interface, cut |
+| 25 | 2:53.00 | 3:06.00 | 13.0s | `01_7085d44f.jpg` (counter) | full frame | zoom 1.12→1.00 on (0.50, 0.50), dimmed 19% under interface, 0.5s dissolve in |
+| | 0:25.5 | 0:50.0 | 24.5s | — (graphic) | quad tile 1 | Fuel totals sheet labeled *Illustrative figures* (no pump photo supplied) |
